@@ -8,12 +8,15 @@
     "fixtures:generate": "node scripts/generate-fixtures.mjs",
     "benchmark": "node scripts/benchmark.mjs",
     "compare": "node scripts/compare.mjs",
+    "validate": "node scripts/validate-results.mjs",
+    "test:schema": "node --test test/schema.test.mjs",
     "report": "node scripts/report.mjs",
     "lab": "node scripts/lab.mjs",
     "lab:quick": "LAB_RUNS=3 LAB_WARMUPS=1 node scripts/lab.mjs"
   },
   "devDependencies": {
     "@typescript/native": "npm:typescript@^7.0.2",
+    "ajv": "^8.17.1",
     "typescript": "npm:@typescript/typescript6@^6.0.2"
   },
   "engines": {

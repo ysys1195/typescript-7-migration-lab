@@ -2,12 +2,12 @@ import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   ensureOutputDirs,
-  readJson,
+  readResultJson,
   reportsDir
 } from "./lib.mjs";
 
-const benchmark = await readJson("benchmark.json");
-const comparison = await readJson("comparison.json");
+const benchmark = await readResultJson("benchmark.json");
+const comparison = await readResultJson("comparison.json");
 
 const byFixture = new Map();
 for (const result of benchmark.results) {
@@ -50,14 +50,21 @@ const diagnosticNotes = comparison.diagnostics
 const markdown = `# TypeScript 6 vs 7 Lab Report
 
 Generated: ${benchmark.generatedAt}
+Schema: ${benchmark.schemaVersion}
+Benchmark run: ${benchmark.runId}
+Comparison run: ${comparison.runId}
 
 ## Environment
 
-- Platform: ${benchmark.environment.platform} ${benchmark.environment.arch}
-- Node: ${benchmark.environment.node}
-- CPU: ${benchmark.environment.cpuModel}
-- Logical CPUs: ${benchmark.environment.logicalCpuCount}
-- Runs: ${benchmark.environment.runs} measured, ${benchmark.environment.warmups} warm-up
+- Platform: ${benchmark.metadata.runtime.platform} ${benchmark.metadata.runtime.arch}
+- Node: ${benchmark.metadata.runtime.nodeVersion}
+- TypeScript 6: ${benchmark.metadata.compilers.ts6.version}
+- TypeScript 7: ${benchmark.metadata.compilers.ts7.version}
+- CPU: ${benchmark.metadata.hardware.cpuModel}
+- Logical CPUs: ${benchmark.metadata.hardware.logicalCpuCount}
+- Memory: ${benchmark.metadata.hardware.totalMemoryBytes} bytes
+- Git: ${benchmark.metadata.git.commitSha ?? "unavailable"} (${benchmark.metadata.git.branch ?? "detached"}, ${benchmark.metadata.git.dirty ? "dirty" : "clean"})
+- Runs: ${benchmark.configuration.runs} measured, ${benchmark.configuration.warmups} warm-up
 
 ## Performance
 
