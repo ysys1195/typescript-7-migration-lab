@@ -1,0 +1,9 @@
+node_modules/
+fixtures/many-files/src/
+fixtures/monorepo/packages/*/dist/
+*.tsbuildinfo
+results/*.json
+reports/*.md
+!results/.gitkeep
+!reports/.gitkeep
+.DS_Store

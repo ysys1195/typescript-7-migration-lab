@@ -1,0 +1,22 @@
+{
+  "name": "ts7-migration-lab",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A reproducible lab for comparing TypeScript 6 and the Go-based TypeScript 7.",
+  "type": "module",
+  "scripts": {
+    "fixtures:generate": "node scripts/generate-fixtures.mjs",
+    "benchmark": "node scripts/benchmark.mjs",
+    "compare": "node scripts/compare.mjs",
+    "report": "node scripts/report.mjs",
+    "lab": "node scripts/lab.mjs",
+    "lab:quick": "LAB_RUNS=3 LAB_WARMUPS=1 node scripts/lab.mjs"
+  },
+  "devDependencies": {
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

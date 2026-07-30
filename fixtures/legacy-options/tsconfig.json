@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "strict": false,
+    "target": "ES5",
+    "module": "AMD",
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "downlevelIteration": true,
+    "esModuleInterop": false,
+    "noEmit": true
+  },
+  "include": ["src"]
+}
