@@ -3,6 +3,11 @@
 TypeScript 6（JavaScript実装）とTypeScript 7（Goによるネイティブ実装）を、
 同じ入力・同じマシンで比較するための実験リポジトリです。
 
+## Project documents
+
+- [実装ロードマップ](docs/roadmap.md)
+- [Notion向けポートフォリオ原稿](docs/portfolio-draft.md)
+
 このラボでは次の問いを扱います。
 
 - コンパイル全体、型チェック、emitはどれくらい速くなったか
