@@ -1,4 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { compilers, run } from "./lib.mjs";
+
+process.env.LAB_RUN_ID = randomUUID();
 
 async function step(label, command, args) {
   console.log(`\n=== ${label} ===`);
@@ -23,6 +26,7 @@ for (const [name, compiler] of Object.entries(compilers)) {
 
 await step("Benchmark", process.execPath, ["scripts/benchmark.mjs"]);
 await step("Compare diagnostics and emit", process.execPath, ["scripts/compare.mjs"]);
+await step("Validate result schema", process.execPath, ["scripts/validate-results.mjs"]);
 await step("Build report", process.execPath, ["scripts/report.mjs"]);
 
 console.log("\nLab complete. Open reports/latest.md.");

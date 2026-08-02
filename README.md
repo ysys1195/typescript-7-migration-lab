@@ -7,6 +7,7 @@ TypeScript 6（JavaScript実装）とTypeScript 7（Goによるネイティブ�
 
 - [実装ロードマップ](docs/roadmap.md)
 - [Notion向けポートフォリオ原稿](docs/portfolio-draft.md)
+- [測定結果のschema](docs/result-schema.md)
 
 このラボでは次の問いを扱います。
 
@@ -34,6 +35,13 @@ npm run lab
 - `results/benchmark.json`: 生の測定値と`--extendedDiagnostics`
 - `results/comparison.json`: diagnosticsとemitの比較
 - `reports/latest.md`: 読みやすいサマリー
+
+生成されるJSONは`schemas/result.schema.json`で検証されます。
+
+```bash
+npm run validate
+npm run test:schema
+```
 
 ## Measuring different sizes
 

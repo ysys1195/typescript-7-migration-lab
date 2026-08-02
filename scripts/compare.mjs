@@ -1,7 +1,13 @@
 import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { compilers, root, run, writeJson } from "./lib.mjs";
+import {
+  compilers,
+  createResultEnvelope,
+  root,
+  run,
+  writeResultJson
+} from "./lib.mjs";
 
 const diagnosticFixtures = [
   { name: "small" },
@@ -92,8 +98,11 @@ try {
     fileComparisons.push({ filename, identical: left === right, ts6: left, ts7: right });
   }
 
-  await writeJson("comparison.json", {
-    generatedAt: new Date().toISOString(),
+  await writeResultJson("comparison.json", {
+    ...await createResultEnvelope("comparison", {
+      diagnosticFixtures,
+      emitFixture: "emit"
+    }),
     diagnostics: diagnosticResults,
     emit: {
       status:

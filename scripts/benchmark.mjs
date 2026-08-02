@@ -1,13 +1,13 @@
-import os from "node:os";
 import path from "node:path";
 import {
   compilers,
+  createResultEnvelope,
   median,
   parseExtendedDiagnostics,
   percentile,
   root,
   run,
-  writeJson
+  writeResultJson
 } from "./lib.mjs";
 
 const runs = Number.parseInt(process.env.LAB_RUNS ?? "10", 10);
@@ -39,17 +39,16 @@ const variants = [
 ];
 
 const output = {
-  generatedAt: new Date().toISOString(),
-  environment: {
-    platform: process.platform,
-    arch: process.arch,
-    node: process.version,
-    cpuModel: os.cpus()[0]?.model ?? "unknown",
-    logicalCpuCount: os.cpus().length,
-    totalMemoryBytes: os.totalmem(),
+  ...await createResultEnvelope("benchmark", {
     runs,
-    warmups
-  },
+    warmups,
+    fixtures: fixtures.map(({ name, args }) => ({ name, args })),
+    variants: variants.map(({ name, extraArgs }) => ({
+      name,
+      compiler: name === "ts6" ? "ts6" : "ts7",
+      extraArgs
+    }))
+  }),
   results: []
 };
 
@@ -91,5 +90,5 @@ for (const fixture of fixtures) {
   }
 }
 
-await writeJson("benchmark.json", output);
+await writeResultJson("benchmark.json", output);
 console.log(`\nWrote ${path.relative(root, path.join(root, "results", "benchmark.json"))}.`);
