@@ -5,7 +5,8 @@
 
 ## Envelope
 
-`benchmark.json`と`comparison.json`は、次の共通情報を持つ。
+`results/runs/<run-id>/benchmark.json`と
+`results/runs/<run-id>/comparison.json`は、次の共通情報を持つ。
 
 - `schemaVersion`: 結果形式のバージョン
 - `kind`: `benchmark`または`comparison`
@@ -48,3 +49,6 @@ npm run test:schema
 readerは、対応していないMAJOR versionを拒否する。schemaを変更するときは、
 同じPull Requestでschema test、生成スクリプト、reader、ドキュメントを更新する。
 過去の測定結果を書き換える場合は、元データを保持し、移行処理を明示する。
+
+結果の保存場所、manifest、latest pointerについては`docs/result-history.md`を
+参照する。

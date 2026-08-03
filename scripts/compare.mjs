@@ -98,7 +98,7 @@ try {
     fileComparisons.push({ filename, identical: left === right, ts6: left, ts7: right });
   }
 
-  await writeResultJson("comparison.json", {
+  const stored = await writeResultJson("comparison.json", {
     ...await createResultEnvelope("comparison", {
       diagnosticFixtures,
       emitFixture: "emit"
@@ -119,8 +119,7 @@ try {
       files: fileComparisons
     }
   });
+  console.log(`Wrote ${path.relative(root, stored.path)}.`);
 } finally {
   await rm(temporaryRoot, { recursive: true, force: true });
 }
-
-console.log("Wrote results/comparison.json.");

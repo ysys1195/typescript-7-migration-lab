@@ -90,5 +90,5 @@ for (const fixture of fixtures) {
   }
 }
 
-await writeResultJson("benchmark.json", output);
-console.log(`\nWrote ${path.relative(root, path.join(root, "results", "benchmark.json"))}.`);
+const stored = await writeResultJson("benchmark.json", output);
+console.log(`\nWrote ${path.relative(root, stored.path)}.`);

@@ -46,8 +46,10 @@
 ## 生成物
 
 - `fixtures/many-files/src/`は`npm run fixtures:generate`で生成する。
-- `results/benchmark.json`と`results/comparison.json`は測定データとして
-  生成する。
+- `results/runs/<run-id>/`は履歴の正本であり、run単位の測定データを生成する。
+- `results/latest.json`は、最後に正常完了したrunを参照するJSON pointerである。
+- `results/benchmark.json`と`results/comparison.json`は移行期間の互換ミラーで
+  あり、履歴の正本として扱わない。
 - `reports/latest.md`はresult filesから生成する。
 - 生成物を直接編集せず、`package.json`のscriptsを使って再生成する。
 

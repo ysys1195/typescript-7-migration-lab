@@ -27,6 +27,7 @@ for (const [name, compiler] of Object.entries(compilers)) {
 await step("Benchmark", process.execPath, ["scripts/benchmark.mjs"]);
 await step("Compare diagnostics and emit", process.execPath, ["scripts/compare.mjs"]);
 await step("Validate result schema", process.execPath, ["scripts/validate-results.mjs"]);
+await step("Finalize run", process.execPath, ["scripts/finalize-run.mjs"]);
 await step("Build report", process.execPath, ["scripts/report.mjs"]);
 
-console.log("\nLab complete. Open reports/latest.md.");
+console.log(`\nLab run ${process.env.LAB_RUN_ID} complete. Open reports/latest.md.`);

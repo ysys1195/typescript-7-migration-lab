@@ -8,6 +8,7 @@ TypeScript 6（JavaScript実装）とTypeScript 7（Goによるネイティブ�
 - [実装ロードマップ](docs/roadmap.md)
 - [Notion向けポートフォリオ原稿](docs/portfolio-draft.md)
 - [測定結果のschema](docs/result-schema.md)
+- [測定履歴の保存方式](docs/result-history.md)
 
 このラボでは次の問いを扱います。
 
@@ -32,16 +33,26 @@ npm run lab
 
 結果は以下に生成されます。
 
-- `results/benchmark.json`: 生の測定値と`--extendedDiagnostics`
-- `results/comparison.json`: diagnosticsとemitの比較
+- `results/runs/<run-id>/benchmark.json`: 生の測定値と`--extendedDiagnostics`
+- `results/runs/<run-id>/comparison.json`: diagnosticsとemitの比較
+- `results/runs/<run-id>/manifest.json`: 2つのartifactを関連付けるmanifest
+- `results/latest.json`: 最後に正常完了したrunへの参照
+- `results/benchmark.json`、`results/comparison.json`: 互換ミラー
 - `reports/latest.md`: 読みやすいサマリー
 
-生成されるJSONは`schemas/result.schema.json`で検証されます。
+測定artifactは`schemas/result.schema.json`、manifestとlatest pointerは
+`schemas/run-storage.schema.json`で検証されます。
 
 ```bash
 npm run validate
 npm run test:schema
+npm run test:store
+npm run runs
 ```
+
+履歴の正本は`results/runs/`です。直下の互換ミラーは最後に正常完了したrunを示す
+移行期間中の既存ツール向けで、reportや将来のUIは`latest.json`または明示した
+run IDから正本を読み込みます。
 
 ## Measuring different sizes
 
