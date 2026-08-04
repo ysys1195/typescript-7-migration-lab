@@ -9,7 +9,10 @@
     "benchmark": "node scripts/benchmark.mjs",
     "compare": "node scripts/compare.mjs",
     "validate": "node scripts/validate-results.mjs",
+    "runs": "node scripts/list-runs.mjs",
+    "test": "node --test test/*.test.mjs",
     "test:schema": "node --test test/schema.test.mjs",
+    "test:store": "node --test test/result-store.test.mjs",
     "report": "node scripts/report.mjs",
     "lab": "node scripts/lab.mjs",
     "lab:quick": "LAB_RUNS=3 LAB_WARMUPS=1 node scripts/lab.mjs"

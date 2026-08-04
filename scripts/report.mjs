@@ -2,12 +2,23 @@ import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   ensureOutputDirs,
-  readResultJson,
   reportsDir
 } from "./lib.mjs";
+import { resultStore } from "./result-store.mjs";
 
-const benchmark = await readResultJson("benchmark.json");
-const comparison = await readResultJson("comparison.json");
+function readRunId(args) {
+  const index = args.indexOf("--run-id");
+  if (index === -1) return process.env.LAB_RUN_ID ?? null;
+  if (!args[index + 1]) throw new Error("--run-id requires a value.");
+  return args[index + 1];
+}
+
+const requestedRunId = readRunId(process.argv.slice(2));
+const run = requestedRunId
+  ? await resultStore.readRun(requestedRunId, { requireComplete: true })
+  : await resultStore.readLatestRun();
+const { benchmark, comparison } = run;
+const comparisonPath = `results/runs/${comparison.runId}/comparison.json`;
 
 const byFixture = new Map();
 for (const result of benchmark.results) {
@@ -44,7 +55,7 @@ const diagnosticNotes = comparison.diagnostics
     if (item.status === "EXPECTED_DIFFERENCE") {
       return `- \`${item.fixture}\`: expected difference; TS6 reports deprecations while TS7 reports removals.`;
     }
-    return `- \`${item.fixture}\`: inspect \`results/comparison.json\` for the exact difference.`;
+    return `- \`${item.fixture}\`: inspect \`${comparisonPath}\` for the exact difference.`;
   });
 
 const markdown = `# TypeScript 6 vs 7 Lab Report
@@ -92,7 +103,7 @@ ${comparison.emit.files.map((file) =>
 ).join("\n")}
 
 ${comparison.emit.ts6Output.length || comparison.emit.ts7Output.length
-  ? `Compiler output is recorded in \`results/comparison.json\`.`
+  ? `Compiler output is recorded in \`${comparisonPath}\`.`
   : ""}
 
 ## Reading the results
@@ -100,7 +111,7 @@ ${comparison.emit.ts6Output.length || comparison.emit.ts7Output.length
 - TS6 vs TS7 single-threaded approximates the benefit of the native implementation.
 - TS7 single-threaded vs default approximates the additional benefit of parallelism.
 - Small fixtures are dominated by process startup; larger fixtures are more representative.
-- A DIFFERENT result is a prompt to inspect \`results/comparison.json\`; it is not
+- A DIFFERENT result is a prompt to inspect \`${comparisonPath}\`; it is not
   automatically a regression.
 `;
 

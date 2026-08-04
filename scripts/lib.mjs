@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,6 +8,7 @@ import {
   RESULT_SCHEMA_VERSION,
   validateResultDocument
 } from "./schema.mjs";
+import { resultStore } from "./result-store.mjs";
 
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const resultsDir = path.join(root, "results");
@@ -124,12 +125,13 @@ export function parseExtendedDiagnostics(output) {
 }
 
 export async function writeResultJson(filename, value) {
-  validateResultDocument(value);
-  await ensureOutputDirs();
-  await writeFile(
-    path.join(resultsDir, filename),
-    `${JSON.stringify(value, null, 2)}\n`
-  );
+  const expectedFilename = `${value.kind}.json`;
+  if (filename !== expectedFilename) {
+    throw new Error(
+      `Result kind ${value.kind} must be written as ${expectedFilename}.`
+    );
+  }
+  return resultStore.writeRunResult(value);
 }
 
 export async function readResultJson(filename) {

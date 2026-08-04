@@ -2,7 +2,7 @@ node_modules/
 fixtures/many-files/src/
 fixtures/monorepo/packages/*/dist/
 *.tsbuildinfo
-results/*.json
+results/**
 reports/*.md
 !results/.gitkeep
 !reports/.gitkeep
