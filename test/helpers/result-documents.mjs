@@ -20,7 +20,7 @@ export const defaultMetadata = {
 
 function common(overrides) {
   return {
-    schemaVersion: "2.0.0",
+    schemaVersion: "3.0.0",
     runId: defaultRunId,
     generatedAt: "2026-07-30T12:00:00.000Z",
     metadata: structuredClone(defaultMetadata),
@@ -52,6 +52,12 @@ export function createBenchmarkResult(overrides = {}) {
       coldRuns: 1,
       timeoutMs: 120000,
       orderStrategy: "rotating-v1",
+      resourceMeasurement: {
+        collector: "darwin-time-l",
+        scope: "timed-process",
+        cpuTime: { status: "available" },
+        peakRss: { status: "available" }
+      },
       fixtures: [{ name: "small", args: ["-p", "fixtures/small"] }],
       variants: [{ name: "ts6", compiler: "ts6", extraArgs: [] }],
       executionPlan: [
@@ -93,7 +99,27 @@ export function createBenchmarkResult(overrides = {}) {
         p95Ms: 12,
         minMs: 9,
         maxMs: 12,
-        outliers: []
+        outliers: [],
+        resourceStatistics: {
+          cpuTimeMs: {
+            availableSamples: 3,
+            unavailableSamples: 0,
+            samples: [5, 6, 7],
+            mean: 6,
+            median: 6,
+            min: 5,
+            max: 7
+          },
+          peakRssBytes: {
+            availableSamples: 3,
+            unavailableSamples: 0,
+            samples: [1_000, 1_100, 1_200],
+            mean: 1_100,
+            median: 1_100,
+            min: 1_000,
+            max: 1_200
+          }
+        }
       },
       compilerDiagnostics: { Files: { value: 64, unit: "" } }
     }]
@@ -101,10 +127,11 @@ export function createBenchmarkResult(overrides = {}) {
 }
 
 export function createAttempt(overrides = {}) {
+  const sequence = overrides.sequence ?? 0;
   return {
     phase: "measured",
     round: 0,
-    sequence: 0,
+    sequence,
     status: "success",
     elapsedMs: 10,
     exitCode: 0,
@@ -112,8 +139,37 @@ export function createAttempt(overrides = {}) {
     stdout: "",
     stderr: "",
     error: null,
+    resourceUsage: {
+      collector: "darwin-time-l",
+      scope: "timed-process",
+      cpuTime: {
+        status: "available",
+        userMs: sequence + 2,
+        systemMs: 1,
+        totalMs: sequence + 3
+      },
+      peakRss: {
+        status: "available",
+        bytes: 800 + sequence * 100
+      }
+    },
     ...overrides
   };
+}
+
+export function createVersion2BenchmarkResult() {
+  const result = createBenchmarkResult({ schemaVersion: "2.0.0" });
+  delete result.configuration.resourceMeasurement;
+  for (const benchmarkResult of result.results) {
+    const attempts = [
+      benchmarkResult.coldRun,
+      ...benchmarkResult.warmupAttempts,
+      ...benchmarkResult.measurementAttempts
+    ];
+    for (const attempt of attempts) delete attempt.resourceUsage;
+    delete benchmarkResult.statistics.resourceStatistics;
+  }
+  return result;
 }
 
 export function createLegacyBenchmarkResult() {

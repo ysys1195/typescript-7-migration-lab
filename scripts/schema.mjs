@@ -30,6 +30,14 @@ function semanticError(message) {
   throw new Error(`Result semantic validation failed:\n${message}`);
 }
 
+function median(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
 function validateAttemptSemantics(attempt, expectedPhase, label) {
   if (attempt.phase !== expectedPhase) {
     semanticError(`${label} must use phase ${expectedPhase}.`);
@@ -69,8 +77,91 @@ function validateAttemptSemantics(attempt, expectedPhase, label) {
   }
 }
 
+function validateResourceUsageSemantics(attempt, capability, label) {
+  const usage = attempt.resourceUsage;
+  if (
+    usage.collector !== capability.collector ||
+    usage.scope !== capability.scope
+  ) {
+    semanticError(`${label} resource collector or scope is inconsistent.`);
+  }
+  const { cpuTime, peakRss } = attempt.resourceUsage;
+  if (
+    (cpuTime.status === "available" && capability.cpuTime.status !== "available") ||
+    (peakRss.status === "available" && capability.peakRss.status !== "available")
+  ) {
+    semanticError(`${label} has a metric unavailable in run capability.`);
+  }
+  if (
+    cpuTime.status === "available" &&
+    cpuTime.totalMs !== cpuTime.userMs + cpuTime.systemMs
+  ) {
+    semanticError(`${label} CPU total does not equal user plus system time.`);
+  }
+  if (["timeout", "runner-error"].includes(attempt.status) && (
+    cpuTime.status !== "unavailable" || peakRss.status !== "unavailable"
+  )) {
+    semanticError(`${label} cannot retain resource metrics after ${attempt.status}.`);
+  }
+}
+
+function validateResourceMetricStatistics(
+  attempts,
+  metricName,
+  statistics,
+  valueSelector,
+  label
+) {
+  const successful = attempts.filter((attempt) => attempt.status === "success");
+  const available = successful.filter(
+    (attempt) => attempt.resourceUsage[metricName].status === "available"
+  );
+  const samples = available.map((attempt) =>
+    valueSelector(attempt.resourceUsage[metricName])
+  );
+  if (
+    statistics.availableSamples !== samples.length ||
+    statistics.unavailableSamples !== successful.length - samples.length ||
+    !isDeepStrictEqual(statistics.samples, samples)
+  ) {
+    semanticError(`${label} resource coverage or samples are inconsistent.`);
+  }
+  const summary = [
+    statistics.mean,
+    statistics.median,
+    statistics.min,
+    statistics.max
+  ];
+  if (samples.length === 0 && summary.some((item) => item !== null)) {
+    semanticError(`${label} unavailable resource statistics must be null.`);
+  }
+  if (samples.length > 0 && summary.some((item) => item === null)) {
+    semanticError(`${label} available resource statistics must be numeric.`);
+  }
+  if (samples.length > 0) {
+    const expected = {
+      mean: samples.reduce((sum, value) => sum + value, 0) / samples.length,
+      median: median(samples),
+      min: Math.min(...samples),
+      max: Math.max(...samples)
+    };
+    if (Object.entries(expected).some(
+      ([name, value]) => statistics[name] !== value
+    )) {
+      semanticError(`${label} resource summaries are inconsistent.`);
+    }
+  }
+}
+
 function validateBenchmarkV2(value) {
   const { configuration } = value;
+  const resourceEnabled = value.schemaVersion === "3.0.0";
+  if (resourceEnabled && !configuration.resourceMeasurement) {
+    semanticError("Schema 3 benchmark requires resourceMeasurement configuration.");
+  }
+  if (!resourceEnabled && configuration.resourceMeasurement) {
+    semanticError("Schema 2 benchmark cannot contain schema 3 resource fields.");
+  }
   const fixtureNames = configuration.fixtures.map((fixture) => fixture.name);
   const variantNames = configuration.variants.map((variant) => variant.name);
   if (
@@ -133,6 +224,19 @@ function validateBenchmarkV2(value) {
 
     for (const { attempt, phase, name } of attempts) {
       validateAttemptSemantics(attempt, phase, `${label} ${name}`);
+      if (resourceEnabled && !attempt.resourceUsage) {
+        semanticError(`${label} ${name} requires resourceUsage.`);
+      }
+      if (!resourceEnabled && attempt.resourceUsage) {
+        semanticError(`${label} ${name} cannot contain schema 3 resource fields.`);
+      }
+      if (resourceEnabled) {
+        validateResourceUsageSemantics(
+          attempt,
+          configuration.resourceMeasurement,
+          `${label} ${name}`
+        );
+      }
       const planned = planBySequence.get(attempt.sequence);
       if (!planned ||
         planned.phase !== attempt.phase ||
@@ -186,6 +290,29 @@ function validateBenchmarkV2(value) {
     if (result.status !== expectedStatus) {
       semanticError(`${label} status must be ${expectedStatus}.`);
     }
+
+    if (resourceEnabled && !statistics.resourceStatistics) {
+      semanticError(`${label} requires resourceStatistics.`);
+    }
+    if (!resourceEnabled && statistics.resourceStatistics) {
+      semanticError(`${label} cannot contain schema 3 resource statistics.`);
+    }
+    if (resourceEnabled) {
+      validateResourceMetricStatistics(
+        result.measurementAttempts,
+        "cpuTime",
+        statistics.resourceStatistics.cpuTimeMs,
+        (metric) => metric.totalMs,
+        `${label} CPU time`
+      );
+      validateResourceMetricStatistics(
+        result.measurementAttempts,
+        "peakRss",
+        statistics.resourceStatistics.peakRssBytes,
+        (metric) => metric.bytes,
+        `${label} peak RSS`
+      );
+    }
   }
 
   if (
@@ -199,7 +326,7 @@ function validateBenchmarkV2(value) {
 
 export function validateResultDocument(value) {
   if (validate(value)) {
-    if (value.kind === "benchmark" && value.schemaVersion === "2.0.0") {
+    if (value.kind === "benchmark" && value.schemaVersion !== "1.0.0") {
       validateBenchmarkV2(value);
     }
     return value;

@@ -375,6 +375,8 @@ Labels: `phase: benchmark`, `type: enhancement`, `priority: medium`
 - wall-clock以外の指標を収集
 - macOS、Linux、Windowsで取得方法を整理
 - 未対応環境では明示的に`unavailable`を保存
+- CPU timeとpeak RSSを独立して取得可否判定
+- resource collectorと測定scopeを結果に保存
 
 Depends on: Issue 1
 

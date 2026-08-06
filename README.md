@@ -10,6 +10,7 @@ TypeScript 6（JavaScript実装）とTypeScript 7（Goによるネイティブ�
 - [測定結果のschema](docs/result-schema.md)
 - [測定履歴の保存方式](docs/result-history.md)
 - [ベンチマーク手法](docs/benchmark-methodology.md)
+- [CPU・メモリ測定方式](docs/resource-measurement.md)
 
 このラボでは次の問いを扱います。
 
@@ -90,6 +91,21 @@ filesystem cacheなどを消去した厳密なcold環境ではありません。
 
 compiler error、timeout、runner errorはattemptとしてstdout／stderrとともに保存し、
 残りのfixtureとvariantの測定を継続します。
+
+CPU timeとpeak RSSは、利用可能な環境ではOSの`/usr/bin/time`で取得します。
+取得できない値は0で代用せず、理由付きの`unavailable`として保存します。
+
+| OS | collector | CPU time | peak RSS |
+|---|---|---|---|
+| macOS | BSD `/usr/bin/time -lp` | 対応 | 対応（bytes） |
+| macOS（RSS取得不可時） | BSD `/usr/bin/time -p` | 対応 | `unavailable` |
+| Linux | GNU `/usr/bin/time -v` | 対応 | 対応（KiBからbytesへ変換） |
+| Windows | — | unavailable | unavailable |
+
+macOSでは`-lp`のprobeでCPU時間だけ取得できた場合、collector
+`darwin-time-p`へ切り替えてCPU時間を保持します。macOS／Linuxでもtool、権限、
+実行環境の制限によりcollectorのprobeが失敗した場合は
+直接実行へ戻り、resource metricsを`unavailable`として記録します。
 
 短い処理ではプロセス起動時間の比率が高くなります。実際のプロジェクトに近い
 判断には`many-files`、`type-heavy`、`monorepo`を重視してください。
