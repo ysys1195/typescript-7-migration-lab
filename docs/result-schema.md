@@ -40,6 +40,11 @@ npm run test:schema
 
 ## Compatibility policy
 
+現在の出力versionは`2.0.0`であり、readerは過去の`1.0.0`も検証できる。
+version 2では、cold／warmup／measured attempt、失敗状態、timeout、実行順、
+mean、母標準偏差、外れ値候補を追加した。成功した計測が0件の場合は、存在しない
+統計値を`null`として保存し、`NaN`や`Infinity`をJSONへ書き込まない。
+
 `schemaVersion`はSemantic Versioningに準じて更新する。
 
 - MAJOR: 既存readerが解釈できない削除、名称変更、型変更

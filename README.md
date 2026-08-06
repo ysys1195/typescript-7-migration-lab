@@ -9,6 +9,7 @@ TypeScript 6（JavaScript実装）とTypeScript 7（Goによるネイティブ�
 - [Notion向けポートフォリオ原稿](docs/portfolio-draft.md)
 - [測定結果のschema](docs/result-schema.md)
 - [測定履歴の保存方式](docs/result-history.md)
+- [ベンチマーク手法](docs/benchmark-methodology.md)
 
 このラボでは次の問いを扱います。
 
@@ -25,7 +26,9 @@ npm install
 npm run lab:quick
 ```
 
-通常測定はwarm-up 2回、計測10回です。
+通常測定はcold 1回、warm-up 2回、計測10回です。3種類のcompilerは
+roundごとに先頭を交代し、特定のcompilerだけが常に先または後にならないように
+実行します。
 
 ```bash
 npm run lab
@@ -47,6 +50,7 @@ npm run lab
 npm run validate
 npm run test:schema
 npm run test:store
+npm run test:benchmark
 npm run runs
 ```
 
@@ -65,6 +69,7 @@ LAB_FILE_COUNT=1000 LAB_RUNS=20 LAB_WARMUPS=3 npm run lab
 | `LAB_FILE_COUNT` | 400 | many-files fixtureのファイル数 |
 | `LAB_RUNS` | 10 | 各ケースの計測回数 |
 | `LAB_WARMUPS` | 2 | 計測前のwarm-up回数 |
+| `LAB_FIXTURE_TIMEOUT_MS` | 120000 | compiler実行1回あたりのtimeout（ms） |
 
 ## Experiment design
 
@@ -77,6 +82,14 @@ LAB_FILE_COUNT=1000 LAB_RUNS=20 LAB_WARMUPS=3 npm run lab
 TS6とTS7 single-threadedの差からネイティブ実装の効果を、TS7
 single-threadedとdefaultの差から並列化の効果を概算できます。ただし、
 内部実装が完全に同一ではないため、厳密な因果分解ではありません。
+
+cold値は、そのlab run内で各fixture／variantを最初に起動した値です。OSの
+filesystem cacheなどを消去した厳密なcold環境ではありません。coldとwarm-upは
+統計から除外し、成功した計測runだけからmedian、p95、mean、母標準偏差を計算
+します。Tukeyの1.5×IQRで外れ値候補を表示しますが、測定値からは除外しません。
+
+compiler error、timeout、runner errorはattemptとしてstdout／stderrとともに保存し、
+残りのfixtureとvariantの測定を継続します。
 
 短い処理ではプロセス起動時間の比率が高くなります。実際のプロジェクトに近い
 判断には`many-files`、`type-heavy`、`monorepo`を重視してください。

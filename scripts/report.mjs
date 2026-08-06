@@ -20,6 +20,30 @@ const run = requestedRunId
 const { benchmark, comparison } = run;
 const comparisonPath = `results/runs/${comparison.runId}/comparison.json`;
 
+function statisticsFor(result) {
+  if (result.statistics) return result.statistics;
+  return {
+    plannedSamples: result.samplesMs.length,
+    successfulSamples: result.samplesMs.length,
+    failedSamples: 0,
+    meanMs: result.samplesMs.reduce((sum, value) => sum + value, 0) /
+      result.samplesMs.length,
+    standardDeviationMs: null,
+    medianMs: result.medianMs,
+    outliers: []
+  };
+}
+
+function formatMean(result) {
+  if (!result) return "—";
+  const statistics = statisticsFor(result);
+  if (statistics.meanMs === null) return "failed";
+  const deviation = statistics.standardDeviationMs === null
+    ? ""
+    : ` ± ${statistics.standardDeviationMs.toFixed(1)}`;
+  return `${statistics.meanMs.toFixed(1)}${deviation}`;
+}
+
 const byFixture = new Map();
 for (const result of benchmark.results) {
   const fixture = byFixture.get(result.fixture) ?? {};
@@ -29,18 +53,63 @@ for (const result of benchmark.results) {
 
 const rows = [];
 for (const [fixture, variants] of byFixture) {
-  const ts6 = variants.ts6?.medianMs;
-  const single = variants["ts7-single"]?.medianMs;
-  const native = variants["ts7-default"]?.medianMs;
+  const ts6 = variants.ts6 ? statisticsFor(variants.ts6).medianMs : null;
+  const single = variants["ts7-single"]
+    ? statisticsFor(variants["ts7-single"]).medianMs
+    : null;
+  const native = variants["ts7-default"]
+    ? statisticsFor(variants["ts7-default"]).medianMs
+    : null;
+  const completion = benchmark.schemaVersion === "1.0.0"
+    ? `${benchmark.configuration.runs}/${benchmark.configuration.runs}`
+    : Object.values(variants).map((result) => {
+      const statistics = statisticsFor(result);
+      return `${result.variant}:${statistics.successfulSamples}/${statistics.plannedSamples}`;
+    }).join(", ");
+  const outlierCount = Object.values(variants).reduce(
+    (total, result) => total + statisticsFor(result).outliers.length,
+    0
+  );
   rows.push([
     fixture,
-    ts6?.toFixed(1) ?? "—",
-    single?.toFixed(1) ?? "—",
-    native?.toFixed(1) ?? "—",
-    ts6 && native ? `${(ts6 / native).toFixed(2)}x` : "—",
-    single && native ? `${(single / native).toFixed(2)}x` : "—"
+    formatMean(variants.ts6),
+    formatMean(variants["ts7-single"]),
+    formatMean(variants["ts7-default"]),
+    ts6 !== null && native !== null && native > 0
+      ? `${(ts6 / native).toFixed(2)}x`
+      : "—",
+    single !== null && native !== null && native > 0
+      ? `${(single / native).toFixed(2)}x`
+      : "—",
+    completion,
+    String(outlierCount)
   ]);
 }
+
+const benchmarkFailures = benchmark.results.flatMap((result) => {
+  if (!result.measurementAttempts) return [];
+  return [result.coldRun, ...result.warmupAttempts, ...result.measurementAttempts]
+    .filter((attempt) => attempt.status !== "success")
+    .map((attempt) =>
+      `- \`${result.fixture}/${result.variant}\` ${attempt.phase} #${attempt.round}: ` +
+      `${attempt.status} (exit ${attempt.exitCode ?? "—"}, signal ${attempt.signal ?? "—"})`
+    );
+});
+
+const coldRows = benchmark.results
+  .filter((result) => result.coldRun)
+  .map((result) =>
+    `| ${result.fixture} | ${result.variant} | ${result.coldRun.status} | ` +
+    `${result.coldRun.elapsedMs?.toFixed(1) ?? "—"} |`
+  );
+
+const outlierDetails = benchmark.results.flatMap((result) =>
+  (result.statistics?.outliers ?? []).map((outlier) =>
+    `- \`${result.fixture}/${result.variant}\` measured #${outlier.round}: ` +
+    `${outlier.elapsedMs.toFixed(1)} ms ` +
+    `(fence ${outlier.lowerFence.toFixed(1)}–${outlier.upperFence.toFixed(1)} ms)`
+  )
+);
 
 const diagnosticRows = comparison.diagnostics.map((item) =>
   `| ${item.fixture} | ${item.status} | ${item.ts6.exitCode} | ${item.ts7.exitCode} |`
@@ -75,16 +144,34 @@ Comparison run: ${comparison.runId}
 - Logical CPUs: ${benchmark.metadata.hardware.logicalCpuCount}
 - Memory: ${benchmark.metadata.hardware.totalMemoryBytes} bytes
 - Git: ${benchmark.metadata.git.commitSha ?? "unavailable"} (${benchmark.metadata.git.branch ?? "detached"}, ${benchmark.metadata.git.dirty ? "dirty" : "clean"})
-- Runs: ${benchmark.configuration.runs} measured, ${benchmark.configuration.warmups} warm-up
+- Runs: ${benchmark.configuration.runs} measured, ${benchmark.configuration.warmups} warm-up, ${benchmark.configuration.coldRuns ?? 0} cold
+${benchmark.configuration.timeoutMs
+  ? `- Timeout: ${benchmark.configuration.timeoutMs} ms per compiler invocation\n- Order: ${benchmark.configuration.orderStrategy}`
+  : ""}
 
 ## Performance
 
-All durations are wall-clock medians. “Parallel gain” compares TS7 single-threaded
-with TS7's default worker configuration.
+Durations are wall-clock mean ± population standard deviation. Speedups use medians.
+Outliers are Tukey 1.5×IQR candidates and remain included in every statistic.
+“Parallel gain” compares TS7 single-threaded with TS7's default worker configuration.
 
-| Fixture | TS6 (ms) | TS7 single (ms) | TS7 default (ms) | TS7 speedup | Parallel gain |
-|---|---:|---:|---:|---:|---:|
+| Fixture | TS6 mean ± SD (ms) | TS7 single | TS7 default | TS7 speedup | Parallel gain | Successful | Outliers |
+|---|---:|---:|---:|---:|---:|---|---:|
 ${rows.map((row) => `| ${row.join(" | ")} |`).join("\n")}
+
+### Cold invocations
+
+${coldRows.length
+  ? `| Fixture | Variant | Status | Duration (ms) |\n|---|---|---|---:|\n${coldRows.join("\n")}`
+  : "Cold invocation data is unavailable for this schema version."}
+
+### Outlier candidates
+
+${outlierDetails.length ? outlierDetails.join("\n") : "No outlier candidates were detected."}
+
+### Benchmark failures
+
+${benchmarkFailures.length ? benchmarkFailures.join("\n") : "No benchmark attempts failed."}
 
 ## Diagnostics
 
@@ -111,6 +198,8 @@ ${comparison.emit.ts6Output.length || comparison.emit.ts7Output.length
 - TS6 vs TS7 single-threaded approximates the benefit of the native implementation.
 - TS7 single-threaded vs default approximates the additional benefit of parallelism.
 - Small fixtures are dominated by process startup; larger fixtures are more representative.
+- “Cold” is the first invocation for a fixture/variant in this lab run; it does not
+  clear operating-system filesystem caches.
 - A DIFFERENT result is a prompt to inspect \`${comparisonPath}\`; it is not
   automatically a regression.
 `;

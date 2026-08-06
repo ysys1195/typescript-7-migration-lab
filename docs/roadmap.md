@@ -363,6 +363,8 @@ Labels: `phase: benchmark`, `type: enhancement`, `priority: high`
 - mean、standard deviationを追加
 - 外れ値候補を表示
 - 失敗時も残りの測定を継続
+- fixture単位のtimeoutを追加
+- 同じ条件を再実行するための設定と実行順を保存
 
 Depends on: Issue 1
 
