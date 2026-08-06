@@ -35,12 +35,35 @@ export function run(command, args, options = {}) {
     });
     let stdout = "";
     let stderr = "";
+    let timedOut = false;
+    let timeout;
+    let forceKillTimeout;
+    let settled = false;
     child.stdout.on("data", (chunk) => { stdout += chunk; });
     child.stderr.on("data", (chunk) => { stderr += chunk; });
-    child.on("error", reject);
+    if (options.timeoutMs !== undefined) {
+      timeout = setTimeout(() => {
+        timedOut = true;
+        child.kill("SIGTERM");
+        forceKillTimeout = setTimeout(() => child.kill("SIGKILL"), 1_000);
+        forceKillTimeout.unref();
+      }, options.timeoutMs);
+      timeout.unref();
+    }
+    child.on("error", (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      clearTimeout(forceKillTimeout);
+      reject(error);
+    });
     child.on("close", (exitCode, signal) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      clearTimeout(forceKillTimeout);
       const elapsedMs = Number(process.hrtime.bigint() - started) / 1e6;
-      resolve({ exitCode, signal, elapsedMs, stdout, stderr });
+      resolve({ exitCode, signal, timedOut, elapsedMs, stdout, stderr });
     });
   });
 }

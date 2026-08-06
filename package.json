@@ -13,6 +13,7 @@
     "test": "node --test test/*.test.mjs",
     "test:schema": "node --test test/schema.test.mjs",
     "test:store": "node --test test/result-store.test.mjs",
+    "test:benchmark": "node --test test/benchmark-core.test.mjs",
     "report": "node scripts/report.mjs",
     "lab": "node scripts/lab.mjs",
     "lab:quick": "LAB_RUNS=3 LAB_WARMUPS=1 node scripts/lab.mjs"

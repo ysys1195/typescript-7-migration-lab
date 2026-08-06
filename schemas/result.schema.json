@@ -12,7 +12,7 @@
     "configuration"
   ],
   "properties": {
-    "schemaVersion": { "const": "1.0.0" },
+    "schemaVersion": { "enum": ["1.0.0", "2.0.0"] },
     "kind": { "enum": ["benchmark", "comparison"] },
     "runId": {
       "type": "string",
@@ -38,14 +38,35 @@
       "then": {
         "required": ["results"],
         "properties": {
-          "configuration": { "$ref": "#/$defs/benchmarkConfiguration" },
-          "results": {
-            "type": "array",
-            "items": { "$ref": "#/$defs/benchmarkResult" }
-          },
           "diagnostics": false,
           "emit": false
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": { "schemaVersion": { "const": "1.0.0" } },
+              "required": ["schemaVersion"]
+            },
+            "then": {
+              "properties": {
+                "configuration": { "$ref": "#/$defs/benchmarkConfigurationV1" },
+                "results": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/benchmarkResultV1" }
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "configuration": { "$ref": "#/$defs/benchmarkConfigurationV2" },
+                "results": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/benchmarkResultV2" }
+                }
+              }
+            }
+          }
+        ]
       }
     },
     {
@@ -133,7 +154,7 @@
       },
       "additionalProperties": false
     },
-    "benchmarkConfiguration": {
+    "benchmarkConfigurationV1": {
       "type": "object",
       "required": ["runs", "warmups", "fixtures", "variants"],
       "properties": {
@@ -146,6 +167,77 @@
         "variants": {
           "type": "array",
           "items": { "$ref": "#/$defs/variant" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "benchmarkConfigurationV2": {
+      "type": "object",
+      "required": [
+        "runs",
+        "warmups",
+        "coldRuns",
+        "timeoutMs",
+        "orderStrategy",
+        "fixtures",
+        "variants",
+        "executionPlan",
+        "replay"
+      ],
+      "properties": {
+        "runs": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "warmups": { "type": "integer", "minimum": 0, "maximum": 20 },
+        "coldRuns": { "const": 1 },
+        "timeoutMs": { "type": "integer", "minimum": 100, "maximum": 600000 },
+        "orderStrategy": { "const": "rotating-v1" },
+        "fixtures": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/fixtureCommand" }
+        },
+        "variants": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/variant" }
+        },
+        "executionPlan": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/executionPlanItem" }
+        },
+        "replay": { "$ref": "#/$defs/replayConfiguration" }
+      },
+      "additionalProperties": false
+    },
+    "executionPlanItem": {
+      "type": "object",
+      "required": ["sequence", "phase", "round", "fixture", "variant"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 0 },
+        "phase": { "enum": ["cold", "warmup", "measured"] },
+        "round": { "type": "integer", "minimum": 0 },
+        "fixture": { "type": "string", "minLength": 1 },
+        "variant": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "replayConfiguration": {
+      "type": "object",
+      "required": ["command", "environment"],
+      "properties": {
+        "command": { "type": "string", "minLength": 1 },
+        "environment": {
+          "type": "object",
+          "required": [
+            "LAB_RUNS",
+            "LAB_WARMUPS",
+            "LAB_FIXTURE_TIMEOUT_MS",
+            "LAB_FILE_COUNT"
+          ],
+          "properties": {
+            "LAB_RUNS": { "type": "string", "pattern": "^[0-9]+$" },
+            "LAB_WARMUPS": { "type": "string", "pattern": "^[0-9]+$" },
+            "LAB_FIXTURE_TIMEOUT_MS": { "type": "string", "pattern": "^[0-9]+$" },
+            "LAB_FILE_COUNT": { "type": "string", "pattern": "^[0-9]+$" }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -175,7 +267,7 @@
       },
       "additionalProperties": false
     },
-    "benchmarkResult": {
+    "benchmarkResultV1": {
       "type": "object",
       "required": [
         "fixture",
@@ -203,6 +295,140 @@
           "type": "object",
           "additionalProperties": { "$ref": "#/$defs/diagnosticMetric" }
         }
+      },
+      "additionalProperties": false
+    },
+    "benchmarkResultV2": {
+      "type": "object",
+      "required": [
+        "fixture",
+        "variant",
+        "status",
+        "coldRun",
+        "warmupAttempts",
+        "measurementAttempts",
+        "statistics",
+        "compilerDiagnostics"
+      ],
+      "properties": {
+        "fixture": { "type": "string", "minLength": 1 },
+        "variant": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["complete", "partial", "failed"] },
+        "coldRun": { "$ref": "#/$defs/benchmarkAttempt" },
+        "warmupAttempts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/benchmarkAttempt" }
+        },
+        "measurementAttempts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/benchmarkAttempt" }
+        },
+        "statistics": { "$ref": "#/$defs/benchmarkStatistics" },
+        "compilerDiagnostics": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/diagnosticMetric" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "benchmarkAttempt": {
+      "type": "object",
+      "required": [
+        "phase",
+        "round",
+        "sequence",
+        "status",
+        "elapsedMs",
+        "exitCode",
+        "signal",
+        "stdout",
+        "stderr",
+        "error"
+      ],
+      "properties": {
+        "phase": { "enum": ["cold", "warmup", "measured"] },
+        "round": { "type": "integer", "minimum": 0 },
+        "sequence": { "type": "integer", "minimum": 0 },
+        "status": {
+          "enum": ["success", "compiler-error", "timeout", "runner-error"]
+        },
+        "elapsedMs": {
+          "oneOf": [
+            { "type": "number", "minimum": 0 },
+            { "type": "null" }
+          ]
+        },
+        "exitCode": {
+          "oneOf": [{ "type": "integer" }, { "type": "null" }]
+        },
+        "signal": {
+          "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+        },
+        "stdout": { "type": "string" },
+        "stderr": { "type": "string" },
+        "error": {
+          "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+        }
+      },
+      "additionalProperties": false
+    },
+    "benchmarkStatistics": {
+      "type": "object",
+      "required": [
+        "plannedSamples",
+        "successfulSamples",
+        "failedSamples",
+        "samplesMs",
+        "meanMs",
+        "standardDeviationMs",
+        "medianMs",
+        "p95Ms",
+        "minMs",
+        "maxMs",
+        "outliers"
+      ],
+      "properties": {
+        "plannedSamples": { "type": "integer", "minimum": 1 },
+        "successfulSamples": { "type": "integer", "minimum": 0 },
+        "failedSamples": { "type": "integer", "minimum": 0 },
+        "samplesMs": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 }
+        },
+        "meanMs": { "$ref": "#/$defs/nullableDuration" },
+        "standardDeviationMs": { "$ref": "#/$defs/nullableDuration" },
+        "medianMs": { "$ref": "#/$defs/nullableDuration" },
+        "p95Ms": { "$ref": "#/$defs/nullableDuration" },
+        "minMs": { "$ref": "#/$defs/nullableDuration" },
+        "maxMs": { "$ref": "#/$defs/nullableDuration" },
+        "outliers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/benchmarkOutlier" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "nullableDuration": {
+      "oneOf": [
+        { "type": "number", "minimum": 0 },
+        { "type": "null" }
+      ]
+    },
+    "benchmarkOutlier": {
+      "type": "object",
+      "required": [
+        "sampleIndex",
+        "round",
+        "elapsedMs",
+        "lowerFence",
+        "upperFence"
+      ],
+      "properties": {
+        "sampleIndex": { "type": "integer", "minimum": 0 },
+        "round": { "type": "integer", "minimum": 0 },
+        "elapsedMs": { "type": "number", "minimum": 0 },
+        "lowerFence": { "type": "number" },
+        "upperFence": { "type": "number", "minimum": 0 }
       },
       "additionalProperties": false
     },
