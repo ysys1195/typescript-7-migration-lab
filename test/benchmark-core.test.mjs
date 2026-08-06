@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { access, mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 import {
   buildExecutionPlan,
@@ -6,7 +9,8 @@ import {
   executeBenchmarkPlan,
   mean,
   populationStandardDeviation,
-  summarizeAttempts
+  summarizeAttempts,
+  summarizeResourceUsage
 } from "../scripts/benchmark-core.mjs";
 import { run } from "../scripts/lib.mjs";
 
@@ -46,6 +50,37 @@ test("zero successful measurements produce nullable statistics", () => {
   assert.equal(statistics.failedSamples, 1);
   assert.equal(statistics.meanMs, null);
   assert.equal(statistics.medianMs, null);
+});
+
+test("resource statistics use successful measured attempts and preserve coverage", () => {
+  const available = {
+    status: "success",
+    resourceUsage: {
+      cpuTime: { status: "available", totalMs: 20 },
+      peakRss: { status: "available", bytes: 1_024 }
+    }
+  };
+  const partial = {
+    status: "success",
+    resourceUsage: {
+      cpuTime: { status: "available", totalMs: 30 },
+      peakRss: { status: "unavailable", reason: "missing" }
+    }
+  };
+  const failed = {
+    status: "compiler-error",
+    resourceUsage: {
+      cpuTime: { status: "available", totalMs: 999 },
+      peakRss: { status: "available", bytes: 999_999 }
+    }
+  };
+  const statistics = summarizeResourceUsage([available, partial, failed]);
+  assert.deepEqual(statistics.cpuTimeMs.samples, [20, 30]);
+  assert.equal(statistics.cpuTimeMs.availableSamples, 2);
+  assert.equal(statistics.cpuTimeMs.unavailableSamples, 0);
+  assert.deepEqual(statistics.peakRssBytes.samples, [1_024]);
+  assert.equal(statistics.peakRssBytes.availableSamples, 1);
+  assert.equal(statistics.peakRssBytes.unavailableSamples, 1);
 });
 
 test("execution plan rotates variant order and is deterministic", () => {
@@ -133,6 +168,38 @@ test("run marks a hanging process as timed out", async () => {
   assert.ok(result.signal === "SIGTERM" || result.signal === "SIGKILL");
 });
 
+test("process-group timeout kills a descendant that ignores SIGTERM", {
+  skip: process.platform === "win32"
+}, async (t) => {
+  const temporaryDirectory = await mkdtemp(
+    path.join(os.tmpdir(), "ts7-process-group-test-")
+  );
+  t.after(() => rm(temporaryDirectory, { recursive: true, force: true }));
+  const markerPath = path.join(temporaryDirectory, "descendant-survived");
+  const descendantScript = `
+    const { writeFileSync } = require("node:fs");
+    process.on("SIGTERM", () => {});
+    setTimeout(() => writeFileSync(${JSON.stringify(markerPath)}, "alive"), 1300);
+    setInterval(() => {}, 1000);
+  `;
+  const script = `
+    const { spawn } = require("node:child_process");
+    spawn(process.execPath, ["-e", ${JSON.stringify(descendantScript)}], { stdio: "ignore" });
+    process.on("SIGTERM", () => process.exit(0));
+    setInterval(() => {}, 1000);
+  `;
+  const started = Date.now();
+  const result = await run(process.execPath, ["-e", script], {
+    timeoutMs: 100,
+    killProcessGroup: true
+  });
+  const waitedMs = Date.now() - started;
+  assert.equal(result.timedOut, true);
+  assert.ok(waitedMs >= 1_000);
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  await assert.rejects(access(markerPath), { code: "ENOENT" });
+});
+
 test("timeout and runner errors are recorded while later attempts continue", async () => {
   const oneFixture = [fixtures[0]];
   const twoVariants = variants.slice(0, 2);
@@ -171,7 +238,13 @@ test("timeout and runner errors are recorded while later attempts continue", asy
         stderr: ""
       };
     },
-    parseDiagnostics: () => ({})
+    parseDiagnostics: () => ({}),
+    runnerErrorResourceUsage: {
+      collector: "darwin-time-l",
+      scope: "timed-process",
+      cpuTime: { status: "unavailable", reason: "runner-error" },
+      peakRss: { status: "unavailable", reason: "runner-error" }
+    }
   });
 
   assert.equal(call, executionPlan.length);
@@ -181,10 +254,25 @@ test("timeout and runner errors are recorded while later attempts continue", asy
   ]);
   assert.equal(attempts.some((attempt) => attempt.status === "timeout"), true);
   assert.equal(
+    attempts.find((attempt) => attempt.status === "timeout")
+      .resourceUsage.cpuTime.reason,
+    "attempt-timeout"
+  );
+  assert.equal(
     attempts.some((attempt) =>
       attempt.status === "runner-error" && attempt.error === "spawn failed"
     ),
     true
+  );
+  assert.equal(
+    attempts.find((attempt) => attempt.status === "runner-error")
+      .resourceUsage.peakRss.reason,
+    "runner-error"
+  );
+  assert.equal(
+    attempts.find((attempt) => attempt.status === "runner-error")
+      .resourceUsage.collector,
+    "darwin-time-l"
   );
   assert.equal(
     attempts.toSorted((left, right) => left.sequence - right.sequence).at(-1).status,

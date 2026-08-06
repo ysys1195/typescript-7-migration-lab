@@ -111,6 +111,34 @@ const outlierDetails = benchmark.results.flatMap((result) =>
   )
 );
 
+function formatResourceMetric(metric, unit) {
+  if (!metric || metric.median === null) return "unavailable";
+  const value = unit === "MiB"
+    ? metric.median / (1024 ** 2)
+    : metric.median;
+  return `${value.toFixed(1)} ${unit}`;
+}
+
+const resourceRows = benchmark.results
+  .filter((result) => result.statistics?.resourceStatistics)
+  .map((result) => {
+    const { cpuTimeMs, peakRssBytes } = result.statistics.resourceStatistics;
+    return `| ${result.fixture} | ${result.variant} | ` +
+      `${formatResourceMetric(cpuTimeMs, "ms")} | ` +
+      `${formatResourceMetric(peakRssBytes, "MiB")} | ` +
+      `${cpuTimeMs.availableSamples}/${cpuTimeMs.availableSamples + cpuTimeMs.unavailableSamples} | ` +
+      `${peakRssBytes.availableSamples}/${peakRssBytes.availableSamples + peakRssBytes.unavailableSamples} |`;
+  });
+
+const resourceReasons = [...new Set(benchmark.results.flatMap((result) => {
+  if (!result.measurementAttempts) return [];
+  return result.measurementAttempts.flatMap((attempt) => [
+    attempt.resourceUsage?.cpuTime,
+    attempt.resourceUsage?.peakRss
+  ]).filter((metric) => metric?.status === "unavailable")
+    .map((metric) => metric.reason);
+}))];
+
 const diagnosticRows = comparison.diagnostics.map((item) =>
   `| ${item.fixture} | ${item.status} | ${item.ts6.exitCode} | ${item.ts7.exitCode} |`
 );
@@ -173,6 +201,23 @@ ${outlierDetails.length ? outlierDetails.join("\n") : "No outlier candidates wer
 
 ${benchmarkFailures.length ? benchmarkFailures.join("\n") : "No benchmark attempts failed."}
 
+## CPU time and peak RSS
+
+${benchmark.configuration.resourceMeasurement
+  ? `Collector: \`${benchmark.configuration.resourceMeasurement.collector}\`. ` +
+    `Scope: \`${benchmark.configuration.resourceMeasurement.scope}\`.`
+  : "Resource measurement is unavailable for this schema version."}
+
+${resourceRows.length
+  ? `| Fixture | Variant | Median CPU | Median peak RSS | CPU coverage | RSS coverage |\n|---|---|---:|---:|---:|---:|\n${resourceRows.join("\n")}`
+  : "CPU time and peak RSS statistics are unavailable."}
+
+${resourceReasons.length
+  ? `Unavailable reasons: ${resourceReasons.map((reason) => `\`${reason}\``).join(", ")}.`
+  : resourceRows.length
+    ? "All successful measured attempts include both resource metrics."
+    : "Resource coverage is unavailable for this schema version."}
+
 ## Diagnostics
 
 | Fixture | Result | TS6 exit | TS7 exit |
@@ -200,6 +245,8 @@ ${comparison.emit.ts6Output.length || comparison.emit.ts7Output.length
 - Small fixtures are dominated by process startup; larger fixtures are more representative.
 - “Cold” is the first invocation for a fixture/variant in this lab run; it does not
   clear operating-system filesystem caches.
+- CPU time is user plus system CPU time and may exceed wall-clock time when work
+  runs in parallel. Peak RSS is normalized to bytes but its OS-specific scope may differ.
 - A DIFFERENT result is a prompt to inspect \`${comparisonPath}\`; it is not
   automatically a regression.
 `;
