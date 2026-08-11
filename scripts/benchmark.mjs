@@ -13,6 +13,10 @@ import {
   run,
   writeResultJson
 } from "./lib.mjs";
+import {
+  createResourceMeasurer,
+  unavailableResourceUsage
+} from "./resource-measurement.mjs";
 
 const runs = Number.parseInt(process.env.LAB_RUNS ?? "10", 10);
 const warmups = Number.parseInt(process.env.LAB_WARMUPS ?? "2", 10);
@@ -71,38 +75,53 @@ const replayEnvironment = {
 
 console.log(`Execution order: ${ORDER_STRATEGY}`);
 console.log(`Per-invocation timeout: ${timeoutMs} ms`);
+const resourceMeasurer = await createResourceMeasurer();
+console.log(
+  `Resource collector: ${resourceMeasurer.capability.collector} ` +
+  `(CPU ${resourceMeasurer.capability.cpuTime.status}, ` +
+  `RSS ${resourceMeasurer.capability.peakRss.status})`
+);
 
-const output = {
-  ...await createResultEnvelope("benchmark", {
-    runs,
-    warmups,
-    coldRuns: 1,
-    timeoutMs,
-    orderStrategy: ORDER_STRATEGY,
-    fixtures: fixtures.map(({ name, args }) => ({ name, args })),
-    variants: variants.map(({ name, extraArgs }) => ({
-      name,
-      compiler: name === "ts6" ? "ts6" : "ts7",
-      extraArgs
-    })),
+let output;
+try {
+  output = {
+    ...await createResultEnvelope("benchmark", {
+      runs,
+      warmups,
+      coldRuns: 1,
+      timeoutMs,
+      orderStrategy: ORDER_STRATEGY,
+      resourceMeasurement: resourceMeasurer.capability,
+      fixtures: fixtures.map(({ name, args }) => ({ name, args })),
+      variants: variants.map(({ name, extraArgs }) => ({
+        name,
+        compiler: name === "ts6" ? "ts6" : "ts7",
+        extraArgs
+      })),
+      executionPlan,
+      replay: {
+        command: "npm run lab",
+        environment: replayEnvironment
+      }
+    }),
+    results: []
+  };
+  output.results = await executeBenchmarkPlan({
     executionPlan,
-    replay: {
-      command: "npm run lab",
-      environment: replayEnvironment
-    }
-  }),
-  results: []
-};
-
-output.results = await executeBenchmarkPlan({
-  executionPlan,
-  fixtures,
-  variants,
-  runs,
-  timeoutMs,
-  execute: run,
-  parseDiagnostics: parseExtendedDiagnostics
-});
+    fixtures,
+    variants,
+    runs,
+    timeoutMs,
+    execute: resourceMeasurer.execute,
+    parseDiagnostics: parseExtendedDiagnostics,
+    runnerErrorResourceUsage: unavailableResourceUsage(
+      "runner-error",
+      resourceMeasurer.capability.collector
+    )
+  });
+} finally {
+  await resourceMeasurer.dispose();
+}
 
 for (const fixture of fixtures) {
   console.log(`\n[${fixture.name}]`);

@@ -49,8 +49,12 @@ phase、round、実行順、経過時間、exit code、signal、stdout、stderr�
 
 timeoutはcompiler invocation単位で、既定値は120000msである。期限を超えたprocessへ
 `SIGTERM`を送り、終了しない場合は1秒後に`SIGKILL`を送る。
-現在は直接起動したcompiler processを対象とし、将来wrapperが子processを生成する
-場合のprocess tree全体の終了は別途対応が必要になる。
+直接実行時はcompiler processを終了する。resource collectorを使うUnix環境では、
+collectorとcompilerを同じprocess groupで起動し、timeout時にgroup全体を終了する。
+
+CPU timeとpeak RSSを取得するときはcompilerを`/usr/bin/time`でラップするため、
+wall-clockにはcollector起動の小さなoverheadも含まれる。全variantへ同じcollectorを
+使い、overheadの推測値を測定値から減算しない。
 
 ## Replaying conditions
 

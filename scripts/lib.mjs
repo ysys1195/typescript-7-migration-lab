@@ -31,6 +31,7 @@ export function run(command, args, options = {}) {
     const child = spawn(command, args, {
       cwd: options.cwd ?? root,
       env: { ...process.env, ...options.env },
+      detached: options.killProcessGroup === true && process.platform !== "win32",
       stdio: ["ignore", "pipe", "pipe"]
     });
     let stdout = "";
@@ -39,14 +40,36 @@ export function run(command, args, options = {}) {
     let timeout;
     let forceKillTimeout;
     let settled = false;
+    let forceKillSent = false;
+    let pendingClose = null;
+    const usesProcessGroup = options.killProcessGroup === true &&
+      process.platform !== "win32";
+    const terminate = (signal) => {
+      if (options.killProcessGroup === true && process.platform !== "win32") {
+        try {
+          process.kill(-child.pid, signal);
+        } catch (error) {
+          if (error.code !== "ESRCH") child.kill(signal);
+        }
+      } else {
+        child.kill(signal);
+      }
+    };
     child.stdout.on("data", (chunk) => { stdout += chunk; });
     child.stderr.on("data", (chunk) => { stderr += chunk; });
     if (options.timeoutMs !== undefined) {
       timeout = setTimeout(() => {
         timedOut = true;
-        child.kill("SIGTERM");
-        forceKillTimeout = setTimeout(() => child.kill("SIGKILL"), 1_000);
-        forceKillTimeout.unref();
+        terminate("SIGTERM");
+        forceKillTimeout = setTimeout(() => {
+          forceKillSent = true;
+          terminate("SIGKILL");
+          if (pendingClose && !settled) {
+            settled = true;
+            pendingClose.resolve();
+          }
+        }, 1_000);
+        if (!usesProcessGroup) forceKillTimeout.unref();
       }, options.timeoutMs);
       timeout.unref();
     }
@@ -59,11 +82,23 @@ export function run(command, args, options = {}) {
     });
     child.on("close", (exitCode, signal) => {
       if (settled) return;
-      settled = true;
       clearTimeout(timeout);
-      clearTimeout(forceKillTimeout);
       const elapsedMs = Number(process.hrtime.bigint() - started) / 1e6;
-      resolve({ exitCode, signal, timedOut, elapsedMs, stdout, stderr });
+      const finish = () => resolve({
+        exitCode,
+        signal,
+        timedOut,
+        elapsedMs,
+        stdout,
+        stderr
+      });
+      if (timedOut && usesProcessGroup && !forceKillSent) {
+        pendingClose = { resolve: finish };
+        return;
+      }
+      settled = true;
+      clearTimeout(forceKillTimeout);
+      finish();
     });
   });
 }

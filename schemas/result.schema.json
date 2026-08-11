@@ -12,7 +12,7 @@
     "configuration"
   ],
   "properties": {
-    "schemaVersion": { "enum": ["1.0.0", "2.0.0"] },
+    "schemaVersion": { "enum": ["1.0.0", "2.0.0", "3.0.0"] },
     "kind": { "enum": ["benchmark", "comparison"] },
     "runId": {
       "type": "string",
@@ -202,7 +202,8 @@
           "type": "array",
           "items": { "$ref": "#/$defs/executionPlanItem" }
         },
-        "replay": { "$ref": "#/$defs/replayConfiguration" }
+        "replay": { "$ref": "#/$defs/replayConfiguration" },
+        "resourceMeasurement": { "$ref": "#/$defs/resourceCapability" }
       },
       "additionalProperties": false
     },
@@ -368,7 +369,8 @@
         "stderr": { "type": "string" },
         "error": {
           "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
-        }
+        },
+        "resourceUsage": { "$ref": "#/$defs/resourceUsage" }
       },
       "additionalProperties": false
     },
@@ -404,7 +406,8 @@
         "outliers": {
           "type": "array",
           "items": { "$ref": "#/$defs/benchmarkOutlier" }
-        }
+        },
+        "resourceStatistics": { "$ref": "#/$defs/resourceStatistics" }
       },
       "additionalProperties": false
     },
@@ -429,6 +432,120 @@
         "elapsedMs": { "type": "number", "minimum": 0 },
         "lowerFence": { "type": "number" },
         "upperFence": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "resourceCapability": {
+      "type": "object",
+      "required": ["collector", "scope", "cpuTime", "peakRss"],
+      "properties": {
+        "collector": { "type": "string", "minLength": 1 },
+        "scope": { "const": "timed-process" },
+        "cpuTime": { "$ref": "#/$defs/metricCapability" },
+        "peakRss": { "$ref": "#/$defs/metricCapability" }
+      },
+      "additionalProperties": false
+    },
+    "metricCapability": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["status"],
+          "properties": { "status": { "const": "available" } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["status", "reason"],
+          "properties": {
+            "status": { "const": "unavailable" },
+            "reason": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "resourceUsage": {
+      "type": "object",
+      "required": ["collector", "scope", "cpuTime", "peakRss"],
+      "properties": {
+        "collector": { "type": "string", "minLength": 1 },
+        "scope": { "const": "timed-process" },
+        "cpuTime": { "$ref": "#/$defs/cpuTimeMetric" },
+        "peakRss": { "$ref": "#/$defs/peakRssMetric" }
+      },
+      "additionalProperties": false
+    },
+    "cpuTimeMetric": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["status", "userMs", "systemMs", "totalMs"],
+          "properties": {
+            "status": { "const": "available" },
+            "userMs": { "type": "number", "minimum": 0 },
+            "systemMs": { "type": "number", "minimum": 0 },
+            "totalMs": { "type": "number", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        { "$ref": "#/$defs/unavailableMetric" }
+      ]
+    },
+    "peakRssMetric": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["status", "bytes"],
+          "properties": {
+            "status": { "const": "available" },
+            "bytes": { "type": "integer", "minimum": 1 }
+          },
+          "additionalProperties": false
+        },
+        { "$ref": "#/$defs/unavailableMetric" }
+      ]
+    },
+    "unavailableMetric": {
+      "type": "object",
+      "required": ["status", "reason"],
+      "properties": {
+        "status": { "const": "unavailable" },
+        "reason": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "resourceStatistics": {
+      "type": "object",
+      "required": ["cpuTimeMs", "peakRssBytes"],
+      "properties": {
+        "cpuTimeMs": { "$ref": "#/$defs/resourceMetricStatistics" },
+        "peakRssBytes": { "$ref": "#/$defs/resourceMetricStatistics" }
+      },
+      "additionalProperties": false
+    },
+    "resourceMetricStatistics": {
+      "type": "object",
+      "required": [
+        "availableSamples",
+        "unavailableSamples",
+        "samples",
+        "mean",
+        "median",
+        "min",
+        "max"
+      ],
+      "properties": {
+        "availableSamples": { "type": "integer", "minimum": 0 },
+        "unavailableSamples": { "type": "integer", "minimum": 0 },
+        "samples": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 }
+        },
+        "mean": { "$ref": "#/$defs/nullableDuration" },
+        "median": { "$ref": "#/$defs/nullableDuration" },
+        "min": { "$ref": "#/$defs/nullableDuration" },
+        "max": { "$ref": "#/$defs/nullableDuration" }
       },
       "additionalProperties": false
     },

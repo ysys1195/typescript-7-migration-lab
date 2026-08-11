@@ -1,4 +1,5 @@
 import { median, percentile } from "./lib.mjs";
+import { unavailableResourceUsage } from "./resource-measurement.mjs";
 
 export const ORDER_STRATEGY = "rotating-v1";
 
@@ -63,7 +64,8 @@ export function summarizeAttempts(measurementAttempts, plannedSamples) {
       p95Ms: null,
       minMs: null,
       maxMs: null,
-      outliers: []
+      outliers: [],
+      resourceStatistics: summarizeResourceUsage(measurementAttempts)
     };
   }
   return {
@@ -77,7 +79,55 @@ export function summarizeAttempts(measurementAttempts, plannedSamples) {
     p95Ms: percentile(samplesMs, 0.95),
     minMs: Math.min(...samplesMs),
     maxMs: Math.max(...samplesMs),
-    outliers: detectOutliers(successful)
+    outliers: detectOutliers(successful),
+    resourceStatistics: summarizeResourceUsage(measurementAttempts)
+  };
+}
+
+function summarizeMetric(measurementAttempts, metricName, valueSelector) {
+  const successful = measurementAttempts.filter(
+    (attempt) => attempt.status === "success"
+  );
+  const available = successful.filter(
+    (attempt) => attempt.resourceUsage[metricName].status === "available"
+  );
+  const samples = available.map((attempt) =>
+    valueSelector(attempt.resourceUsage[metricName])
+  );
+  if (samples.length === 0) {
+    return {
+      availableSamples: 0,
+      unavailableSamples: successful.length,
+      samples: [],
+      mean: null,
+      median: null,
+      min: null,
+      max: null
+    };
+  }
+  return {
+    availableSamples: samples.length,
+    unavailableSamples: successful.length - samples.length,
+    samples,
+    mean: mean(samples),
+    median: median(samples),
+    min: Math.min(...samples),
+    max: Math.max(...samples)
+  };
+}
+
+export function summarizeResourceUsage(measurementAttempts) {
+  return {
+    cpuTimeMs: summarizeMetric(
+      measurementAttempts,
+      "cpuTime",
+      (metric) => metric.totalMs
+    ),
+    peakRssBytes: summarizeMetric(
+      measurementAttempts,
+      "peakRss",
+      (metric) => metric.bytes
+    )
   };
 }
 
@@ -127,11 +177,14 @@ function createAttempt(planItem, result) {
     signal: result.signal,
     stdout: result.stdout,
     stderr: result.stderr,
-    error: null
+    error: null,
+    resourceUsage: result.resourceUsage ?? unavailableResourceUsage(
+      result.timedOut ? "attempt-timeout" : "measurement-not-returned"
+    )
   };
 }
 
-function createRunnerErrorAttempt(planItem, error) {
+function createRunnerErrorAttempt(planItem, error, resourceUsage) {
   const message = error instanceof Error ? error.message : String(error);
   return {
     phase: planItem.phase,
@@ -143,7 +196,8 @@ function createRunnerErrorAttempt(planItem, error) {
     signal: null,
     stdout: "",
     stderr: "",
-    error: message || "Unknown runner error"
+    error: message || "Unknown runner error",
+    resourceUsage
   };
 }
 
@@ -154,7 +208,8 @@ export async function executeBenchmarkPlan({
   runs,
   timeoutMs,
   execute,
-  parseDiagnostics
+  parseDiagnostics,
+  runnerErrorResourceUsage = unavailableResourceUsage("runner-error")
 }) {
   const fixtureByName = new Map(fixtures.map((fixture) => [fixture.name, fixture]));
   const variantByName = new Map(variants.map((variant) => [variant.name, variant]));
@@ -182,7 +237,11 @@ export async function executeBenchmarkPlan({
       const outcome = await execute(variant.compiler, args, { timeoutMs });
       attempt = createAttempt(planItem, outcome);
     } catch (error) {
-      attempt = createRunnerErrorAttempt(planItem, error);
+      attempt = createRunnerErrorAttempt(
+        planItem,
+        error,
+        structuredClone(runnerErrorResourceUsage)
+      );
     }
 
     const result = results.get(`${planItem.fixture}\0${planItem.variant}`);
