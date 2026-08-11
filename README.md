@@ -11,6 +11,7 @@ TypeScript 6（JavaScript実装）とTypeScript 7（Goによるネイティブ�
 - [測定履歴の保存方式](docs/result-history.md)
 - [ベンチマーク手法](docs/benchmark-methodology.md)
 - [CPU・メモリ測定方式](docs/resource-measurement.md)
+- [checker・builder scaling実験](docs/scaling-experiments.md)
 
 このラボでは次の問いを扱います。
 
@@ -84,6 +85,10 @@ TS6とTS7 single-threadedの差からネイティブ実装の効果を、TS7
 single-threadedとdefaultの差から並列化の効果を概算できます。ただし、
 内部実装が完全に同一ではないため、厳密な因果分解ではありません。
 
+これに加え、`many-files`ではTS7の`--checkers 1/2/4/8`、専用の
+`builder-scaling` fixtureでは`--builders 1/2/4`を測定します。builder実験では
+checker数を1へ固定し、worker 1を基準に速度とメモリの変化を比較します。
+
 cold値は、そのlab run内で各fixture／variantを最初に起動した値です。OSの
 filesystem cacheなどを消去した厳密なcold環境ではありません。coldとwarm-upは
 統計から除外し、成功した計測runだけからmedian、p95、mean、母標準偏差を計算
@@ -118,6 +123,7 @@ macOSでは`-lp`のprobeでCPU時間だけ取得できた場合、collector
 - `jsx`: JSXのパースと型チェック
 - `jsdoc`: JavaScript + JSDoc + `checkJs`
 - `monorepo`: project referencesとbuild mode
+- `builder-scaling`: core後に4つの独立leafをbuildできるbuilder並列度用DAG
 - `diagnostics`: 意図的な型エラー
 - `emit`: JavaScriptと`.d.ts`の比較
 - `legacy-options`: TS7で削除・変更された設定の観察

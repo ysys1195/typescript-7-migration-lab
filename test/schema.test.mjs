@@ -5,6 +5,7 @@ import {
   createBenchmarkResult,
   createComparisonResult,
   createLegacyBenchmarkResult,
+  createScalingBenchmarkResult,
   createVersion2BenchmarkResult
 } from "./helpers/result-documents.mjs";
 
@@ -13,6 +14,48 @@ const comparison = createComparisonResult();
 
 test("benchmark result follows schema version 3.0.0", () => {
   assert.equal(validateResultDocument(benchmark), benchmark);
+});
+
+test("scaling benchmark result follows schema version 3.1.0", () => {
+  const scaling = createScalingBenchmarkResult();
+  assert.equal(validateResultDocument(scaling), scaling);
+});
+
+test("schema version 3.1 requires complete checker and builder matrices", () => {
+  const invalid = createScalingBenchmarkResult();
+  const removed = invalid.configuration.variants.pop();
+  invalid.results = invalid.results.filter(
+    (result) => result.variant !== removed.name
+  );
+  const keptSequences = new Set(invalid.results.flatMap((result) => [
+    result.coldRun,
+    ...result.warmupAttempts,
+    ...result.measurementAttempts
+  ]).map((attempt) => attempt.sequence));
+  invalid.configuration.executionPlan = invalid.configuration.executionPlan
+    .filter((item) => keptSequences.has(item.sequence));
+  assert.throws(
+    () => validateResultDocument(invalid),
+    /semantic validation failed/
+  );
+});
+
+test("schema version 3.1 rejects unknown applicable fixtures", () => {
+  const invalid = createScalingBenchmarkResult();
+  invalid.configuration.variants[0].applicableFixtures = ["missing"];
+  assert.throws(
+    () => validateResultDocument(invalid),
+    /semantic validation failed/
+  );
+});
+
+test("schema version 3.1 retains schema 3 resource requirements", () => {
+  const invalid = createScalingBenchmarkResult();
+  delete invalid.configuration.resourceMeasurement;
+  assert.throws(
+    () => validateResultDocument(invalid),
+    /semantic validation failed/
+  );
 });
 
 test("legacy benchmark result remains readable", () => {

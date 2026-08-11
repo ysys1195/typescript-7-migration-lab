@@ -40,13 +40,17 @@ npm run test:schema
 
 ## Compatibility policy
 
-現在の出力versionは`3.0.0`であり、readerは過去の`1.0.0`と`2.0.0`も検証できる。
+現在の出力versionは`3.1.0`であり、readerは過去の`1.0.0`、`2.0.0`、`3.0.0`も
+検証できる。
 version 2では、cold／warmup／measured attempt、失敗状態、timeout、実行順、
 mean、母標準偏差、外れ値候補を追加した。成功した計測が0件の場合は、存在しない
 統計値を`null`として保存し、`NaN`や`Infinity`をJSONへ書き込まない。
 version 3ではattempt単位のCPU timeとpeak RSS、その取得可否、成功したmeasured
 attemptだけを対象とするresource statisticsを追加した。未取得値は数値や`null`へ
 置き換えず、理由付きの`unavailable`として保存する。
+version 3.1ではvariantごとの`applicableFixtures`とscaling metadataを追加した。
+これにより、通常projectだけに適用する`--checkers`と、build modeだけに適用する
+`--builders`を無効な直積にせず、疎なfixture／variant pairとして保存する。
 
 `schemaVersion`はSemantic Versioningに準じて更新する。
 

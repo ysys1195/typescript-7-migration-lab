@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "strict": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "declaration": true,
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "references": [{ "path": "../core" }],
+  "include": ["src"]
+}

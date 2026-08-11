@@ -153,9 +153,78 @@ function validateResourceMetricStatistics(
   }
 }
 
+function optionValue(args, name) {
+  const index = args.indexOf(name);
+  return index === -1 ? null : args[index + 1] ?? null;
+}
+
+function validateScalingConfiguration(configuration, fixtureNames) {
+  const groups = new Map();
+  for (const variant of configuration.variants) {
+    if (!variant.applicableFixtures) {
+      semanticError(`Variant ${variant.name} requires applicableFixtures.`);
+    }
+    for (const fixture of variant.applicableFixtures) {
+      if (!fixtureNames.includes(fixture)) {
+        semanticError(`Variant ${variant.name} references unknown fixture ${fixture}.`);
+      }
+    }
+    if (!variant.scaling) continue;
+    if (variant.compiler !== "ts7") {
+      semanticError(`Scaling variant ${variant.name} must use TS7.`);
+    }
+    const { axis, requestedWorkers, fixedCheckers } = variant.scaling;
+    const expectedOption = axis === "checkers" ? "--checkers" : "--builders";
+    if (optionValue(variant.extraArgs, expectedOption) !== String(requestedWorkers)) {
+      semanticError(`Scaling variant ${variant.name} does not match its worker count.`);
+    }
+    if (axis === "checkers" && variant.extraArgs.includes("--builders")) {
+      semanticError(`Checker scaling variant ${variant.name} cannot set builders.`);
+    }
+    if (axis === "builders" &&
+      optionValue(variant.extraArgs, "--checkers") !== String(fixedCheckers)) {
+      semanticError(`Builder scaling variant ${variant.name} must fix checkers.`);
+    }
+    for (const fixtureName of variant.applicableFixtures) {
+      const fixture = configuration.fixtures.find(
+        (candidate) => candidate.name === fixtureName
+      );
+      const isBuild = fixture.args.includes("--build");
+      if (axis === "builders" && !isBuild) {
+        semanticError(`Builder scaling fixture ${fixtureName} must use build mode.`);
+      }
+      if (axis === "checkers" && isBuild) {
+        semanticError(`Checker scaling fixture ${fixtureName} must not use build mode.`);
+      }
+      const key = `${axis}\0${fixtureName}`;
+      const points = groups.get(key) ?? [];
+      points.push(requestedWorkers);
+      groups.set(key, points);
+    }
+  }
+
+  const expectedByAxis = {
+    checkers: [1, 2, 4, 8],
+    builders: [1, 2, 4]
+  };
+  for (const axis of Object.keys(expectedByAxis)) {
+    const axisGroups = [...groups].filter(([key]) => key.startsWith(`${axis}\0`));
+    if (axisGroups.length === 0) {
+      semanticError(`Scaling configuration requires a ${axis} matrix.`);
+    }
+    for (const [key, points] of axisGroups) {
+      const sorted = [...points].sort((a, b) => a - b);
+      if (!isDeepStrictEqual(sorted, expectedByAxis[axis])) {
+        semanticError(`Scaling group ${key.replace("\0", "/")} has an invalid matrix.`);
+      }
+    }
+  }
+}
+
 function validateBenchmarkV2(value) {
   const { configuration } = value;
-  const resourceEnabled = value.schemaVersion === "3.0.0";
+  const resourceEnabled = ["3.0.0", "3.1.0"].includes(value.schemaVersion);
+  const scalingEnabled = value.schemaVersion === "3.1.0";
   if (resourceEnabled && !configuration.resourceMeasurement) {
     semanticError("Schema 3 benchmark requires resourceMeasurement configuration.");
   }
@@ -172,9 +241,18 @@ function validateBenchmarkV2(value) {
   ) {
     semanticError("Fixture and variant names must be non-empty and unique.");
   }
+  if (scalingEnabled) {
+    validateScalingConfiguration(configuration, fixtureNames);
+  } else if (configuration.variants.some(
+    (variant) => variant.applicableFixtures || variant.scaling
+  )) {
+    semanticError("Schema versions before 3.1 cannot contain scaling fields.");
+  }
   const expectedPairs = new Set(
-    fixtureNames.flatMap((fixture) =>
-      variantNames.map((variant) => `${fixture}\0${variant}`)
+    configuration.variants.flatMap((variant) =>
+      (variant.applicableFixtures ?? fixtureNames).map(
+        (fixture) => `${fixture}\0${variant.name}`
+      )
     )
   );
   const planBySequence = new Map();

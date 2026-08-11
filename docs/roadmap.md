@@ -388,6 +388,9 @@ Labels: `phase: benchmark`, `type: experiment`, `priority: medium`
 - `--builders 1/2/4`
 - CPU数との関係をレポート
 - 過剰並列時のメモリ増加を記録
+- checkerは`many-files`、builderは独立leafを持つ専用DAGで測定
+- worker 1をbaselineとしてwall-clock speedupとRSS比を表示
+- logical CPU超過点がmatrixにない場合は、その事実を明示
 
 Depends on: Issues 1 and 3
 

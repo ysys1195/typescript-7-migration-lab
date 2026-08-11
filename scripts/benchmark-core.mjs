@@ -141,11 +141,19 @@ export function buildExecutionPlan({ fixtures, variants, warmups, runs }) {
   let sequence = 0;
 
   fixtures.forEach((fixture, fixtureIndex) => {
+    const applicableVariants = variants.filter((variant) =>
+      !variant.applicableFixtures ||
+      variant.applicableFixtures.includes(fixture.name)
+    );
+    if (applicableVariants.length === 0) return;
     for (const { phase, count, baseRound } of phases) {
       for (let round = 0; round < count; round += 1) {
-        const offset = (fixtureIndex + baseRound + round) % variants.length;
-        for (let position = 0; position < variants.length; position += 1) {
-          const variant = variants[(offset + position) % variants.length];
+        const offset = (fixtureIndex + baseRound + round) %
+          applicableVariants.length;
+        for (let position = 0; position < applicableVariants.length; position += 1) {
+          const variant = applicableVariants[
+            (offset + position) % applicableVariants.length
+          ];
           plan.push({
             sequence,
             phase,
@@ -215,11 +223,12 @@ export async function executeBenchmarkPlan({
   const variantByName = new Map(variants.map((variant) => [variant.name, variant]));
   const results = new Map();
 
-  for (const fixture of fixtures) {
-    for (const variant of variants) {
-      results.set(`${fixture.name}\0${variant.name}`, {
-        fixture: fixture.name,
-        variant: variant.name,
+  for (const planItem of executionPlan) {
+    const key = `${planItem.fixture}\0${planItem.variant}`;
+    if (!results.has(key)) {
+      results.set(key, {
+        fixture: planItem.fixture,
+        variant: planItem.variant,
         coldRun: null,
         warmupAttempts: [],
         measurementAttempts: [],

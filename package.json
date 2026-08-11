@@ -15,6 +15,7 @@
     "test:store": "node --test test/result-store.test.mjs",
     "test:benchmark": "node --test test/benchmark-core.test.mjs",
     "test:resources": "node --test test/resource-measurement.test.mjs",
+    "test:scaling": "node --test test/scaling-report.test.mjs",
     "report": "node scripts/report.mjs",
     "lab": "node scripts/lab.mjs",
     "lab:quick": "LAB_RUNS=3 LAB_WARMUPS=1 node scripts/lab.mjs"
