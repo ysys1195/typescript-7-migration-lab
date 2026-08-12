@@ -22,7 +22,9 @@
     "test:options": "node --test test/compiler-options.test.mjs",
     "test:fixtures": "node --test test/fixture-presets.test.mjs",
     "test:history": "node --test test/historical-comparison.test.mjs",
+    "test:dashboard": "node --test test/dashboard-server.test.mjs",
     "report": "node scripts/report.mjs",
+    "dev": "node scripts/dashboard-server.mjs",
     "lab": "node scripts/lab.mjs",
     "lab:quick": "LAB_FIXTURE_PRESET=small LAB_RUNS=3 LAB_WARMUPS=1 node scripts/lab.mjs"
   },

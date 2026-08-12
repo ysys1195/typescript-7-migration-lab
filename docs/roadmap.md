@@ -266,6 +266,11 @@ threshold、machine／Node／入力条件の比較可否判定、Markdown／JSON
 - UIが固定schemaだけを参照する
 - 主要な結論を画面だけで把握できる
 
+Issue #10で、Overview、Performance、Compatibility、Diagnostics Diff、Emit Diff、
+Run History、Environmentを持つread-only local dashboardを実装した。versioned result
+documentsとhistorical comparisonだけを読み、ブラウザからcommandやartifact writeを
+実行しない。
+
 ### Phase 8 — CIと自動検証
 
 実装内容：
