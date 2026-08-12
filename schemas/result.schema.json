@@ -12,7 +12,7 @@
     "configuration"
   ],
   "properties": {
-    "schemaVersion": { "enum": ["1.0.0", "2.0.0", "3.0.0", "3.1.0", "4.0.0", "4.1.0"] },
+    "schemaVersion": { "enum": ["1.0.0", "2.0.0", "3.0.0", "3.1.0", "4.0.0", "4.1.0", "4.2.0"] },
     "kind": { "enum": ["benchmark", "comparison"] },
     "runId": {
       "type": "string",
@@ -86,7 +86,7 @@
           {
             "if": {
               "properties": {
-                "schemaVersion": { "enum": ["4.0.0", "4.1.0"] }
+                "schemaVersion": { "enum": ["4.0.0", "4.1.0", "4.2.0"] }
               },
               "required": ["schemaVersion"]
             },
@@ -233,7 +233,8 @@
           "items": { "$ref": "#/$defs/executionPlanItem" }
         },
         "replay": { "$ref": "#/$defs/replayConfiguration" },
-        "resourceMeasurement": { "$ref": "#/$defs/resourceCapability" }
+        "resourceMeasurement": { "$ref": "#/$defs/resourceCapability" },
+        "fixturePreset": { "$ref": "#/$defs/fixturePreset" }
       },
       "additionalProperties": false
     },
@@ -266,7 +267,8 @@
             "LAB_RUNS": { "type": "string", "pattern": "^[0-9]+$" },
             "LAB_WARMUPS": { "type": "string", "pattern": "^[0-9]+$" },
             "LAB_FIXTURE_TIMEOUT_MS": { "type": "string", "pattern": "^[0-9]+$" },
-            "LAB_FILE_COUNT": { "type": "string", "pattern": "^[0-9]+$" }
+            "LAB_FILE_COUNT": { "type": "string", "pattern": "^[0-9]+$" },
+            "LAB_FIXTURE_PRESET": { "enum": ["small", "medium", "large"] }
           },
           "additionalProperties": false
         }
@@ -281,9 +283,62 @@
         "args": {
           "type": "array",
           "items": { "type": "string" }
+        },
+        "measurement": { "enum": ["incremental", "watch"] },
+        "state": { "enum": ["initial", "no-change", "edit"] },
+        "resetPaths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
         }
       },
       "additionalProperties": false
+    },
+    "fixturePreset": {
+      "type": "object",
+      "required": ["name", "values"],
+      "properties": {
+        "name": { "enum": ["small", "medium", "large"] },
+        "values": {
+          "type": "object",
+          "required": [
+            "manyFiles",
+            "parseFiles",
+            "parseStatementsPerFile",
+            "typeFiles",
+            "typeInstantiationsPerFile",
+            "emitFiles",
+            "declarationFiles",
+            "modulePackages",
+            "incrementalFiles",
+            "watchFiles",
+            "dagLayers",
+            "dagWidth"
+          ],
+          "properties": {
+            "manyFiles": { "$ref": "#/$defs/presetScale" },
+            "parseFiles": { "$ref": "#/$defs/presetScale" },
+            "parseStatementsPerFile": { "$ref": "#/$defs/presetScale" },
+            "typeFiles": { "$ref": "#/$defs/presetScale" },
+            "typeInstantiationsPerFile": { "$ref": "#/$defs/presetScale" },
+            "emitFiles": { "$ref": "#/$defs/presetScale" },
+            "declarationFiles": { "$ref": "#/$defs/presetScale" },
+            "modulePackages": { "$ref": "#/$defs/presetScale" },
+            "incrementalFiles": { "$ref": "#/$defs/presetScale" },
+            "watchFiles": { "$ref": "#/$defs/presetScale" },
+            "dagLayers": { "$ref": "#/$defs/presetScale" },
+            "dagWidth": { "$ref": "#/$defs/presetScale" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "presetScale": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000
     },
     "variant": {
       "type": "object",

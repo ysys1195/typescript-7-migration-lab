@@ -173,6 +173,7 @@ test("cold and warmup attempts are excluded and failures do not stop the plan", 
   });
 
   assert.equal(visited.length, executionPlan.length);
+  assert.equal(visited[0].options.fixture, oneFixture[0]);
   const first = results.find((result) => result.variant === "ts6");
   assert.notEqual(first.statistics.samplesMs[0], 100);
   assert.notEqual(first.statistics.samplesMs[0], 300);

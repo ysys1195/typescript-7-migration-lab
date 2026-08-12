@@ -50,6 +50,8 @@ MVPでは以下を実装済み。
 - TypeScript 6とTypeScript 7の同居
 - TS6、TS7 single-threaded、TS7 defaultの反復測定
 - small、type-heavy、many-files、JSX、JSDoc、monorepo fixture
+- startup、parse、type-check、emit、module resolution、incremental、watch、
+  project-reference DAGを分離する性能fixtureとsmall／medium／large preset
 - diagnostics比較
 - JavaScriptと`.d.ts`のemit比較
 - legacy compiler optionsの差分確認
@@ -135,6 +137,10 @@ TS6が`2`、TS7が`1`だった。emit fixtureのJavaScriptと`.d.ts`は一致し
 - parse、check、emit、resolution、incrementalを個別に観察できる
 - small、medium、largeのプリセットがある
 - 各fixtureが何を測るか文書化されている
+
+Issue #8では`errors-many`を除くfixture、3段階preset、stateful runner、生成scaleの
+manifest検証を実装した。`errors-many`は大量diagnosticsの互換性分類と合わせて扱う
+候補として残す。
 
 ### Phase 4 — 構造化された互換性比較
 

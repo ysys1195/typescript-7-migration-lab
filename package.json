@@ -19,9 +19,10 @@
     "test:scaling": "node --test test/scaling-report.test.mjs",
     "test:diagnostics": "node --test test/diagnostics.test.mjs",
     "test:options": "node --test test/compiler-options.test.mjs",
+    "test:fixtures": "node --test test/fixture-presets.test.mjs",
     "report": "node scripts/report.mjs",
     "lab": "node scripts/lab.mjs",
-    "lab:quick": "LAB_RUNS=3 LAB_WARMUPS=1 node scripts/lab.mjs"
+    "lab:quick": "LAB_FIXTURE_PRESET=small LAB_RUNS=3 LAB_WARMUPS=1 node scripts/lab.mjs"
   },
   "devDependencies": {
     "@typescript/native": "npm:typescript@^7.0.2",

@@ -40,8 +40,8 @@ npm run test:schema
 
 ## Compatibility policy
 
-現在の出力versionは`4.1.0`であり、readerは過去の`1.0.0`、`2.0.0`、`3.0.0`、
-`3.1.0`、`4.0.0`も検証できる。
+現在の出力versionは`4.2.0`であり、readerは過去の`1.0.0`、`2.0.0`、`3.0.0`、
+`3.1.0`、`4.0.0`、`4.1.0`も検証できる。
 version 2では、cold／warmup／measured attempt、失敗状態、timeout、実行順、
 mean、母標準偏差、外れ値候補を追加した。成功した計測が0件の場合は、存在しない
 統計値を`null`として保存し、`NaN`や`Infinity`をJSONへ書き込まない。
@@ -59,6 +59,10 @@ version 4.1ではcomparisonへcompiler option catalogの実行結果を追加し
 classification、migration、reproduction command、期待値、TS6／TS7のstructured
 diagnosticsとraw outputを保存する。既存4.0 readerが無視できる追加フィールドのため
 minor versionを更新した。
+version 4.2ではbenchmarkへ`fixturePreset`を追加し、preset名と全scaleを保存する。
+fixture commandにはincremental／watchの測定方式、incremental state、timed invocation
+前に消去する出力pathを記録できる。replay環境の`LAB_FIXTURE_PRESET`と
+`LAB_FILE_COUNT`はpreset metadataとの整合性を検証する。
 
 `schemaVersion`はSemantic Versioningに準じて更新する。
 
