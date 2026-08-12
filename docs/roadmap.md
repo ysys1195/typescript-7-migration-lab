@@ -297,6 +297,10 @@ documentsとhistorical comparisonだけを読み、ブラウザからcommandやa
 - 性能値を共有runnerだけで断定しない
 - TSの更新を再現可能な方法で検証できる
 
+Issue #12で、UbuntuのNode 20／22／24とmacOS／WindowsのNode 24を使うCI matrixを
+追加した。fixture smoke、構造化diagnostics、JS／declaration emit、compiler versionを
+固定goldenへ個別に照合し、共有runnerの時間・CPU・memoryは合否判定に使用しない。
+
 ### Phase 9 — 実プロジェクトadapter
 
 目的は、合成fixtureの結論を現実のコードベースで検証すること。

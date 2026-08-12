@@ -13,9 +13,15 @@ import { resultStore } from "./result-store.mjs";
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const resultsDir = path.join(root, "results");
 export const reportsDir = path.join(root, "reports");
+export const compilerExecutableName = (name, platform = process.platform) =>
+  platform === "win32"
+    ? `${name}.cmd`
+    : name;
+export const shouldUseCommandShell = (command, platform = process.platform) =>
+  platform === "win32" && command.toLowerCase().endsWith(".cmd");
 export const compilers = {
-  ts6: path.join(root, "node_modules", ".bin", "tsc6"),
-  ts7: path.join(root, "node_modules", ".bin", "tsc")
+  ts6: path.join(root, "node_modules", ".bin", compilerExecutableName("tsc6")),
+  ts7: path.join(root, "node_modules", ".bin", compilerExecutableName("tsc"))
 };
 
 export async function ensureOutputDirs() {
@@ -32,6 +38,7 @@ export function run(command, args, options = {}) {
       cwd: options.cwd ?? root,
       env: { ...process.env, ...options.env },
       detached: options.killProcessGroup === true && process.platform !== "win32",
+      shell: shouldUseCommandShell(command),
       stdio: ["ignore", "pipe", "pipe"]
     });
     let stdout = "";

@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { run, root } from "./lib.mjs";
+import { run, root, shouldUseCommandShell } from "./lib.mjs";
 import { unavailableResourceUsage } from "./resource-measurement.mjs";
 
 function directUsage(reason, collector) {
@@ -131,6 +131,7 @@ async function runWatchFixture({ compiler, args, timeoutMs, collector }) {
       cwd: root,
       detached: process.platform !== "win32",
       env: process.env,
+      shell: shouldUseCommandShell(compiler),
       stdio: ["ignore", "pipe", "pipe"]
     });
     let stdout = "";
