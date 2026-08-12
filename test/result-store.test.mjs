@@ -5,13 +5,21 @@ import path from "node:path";
 import test from "node:test";
 import { createResultStore } from "../scripts/result-store.mjs";
 import {
-  createBenchmarkResult,
   createComparisonResult,
+  createScalingBenchmarkResult,
   defaultMetadata,
   defaultRunId
 } from "./helpers/result-documents.mjs";
 
 const secondRunId = "223e4567-e89b-42d3-b456-426614174001";
+
+function createCurrentBenchmarkResult(overrides = {}) {
+  return {
+    ...createScalingBenchmarkResult(),
+    schemaVersion: "4.0.0",
+    ...overrides
+  };
+}
 
 async function createTestStore(t, options = {}) {
   const baseDir = await mkdtemp(path.join(os.tmpdir(), "ts7-result-store-"));
@@ -28,7 +36,7 @@ async function createTestStore(t, options = {}) {
 }
 
 async function writeCompleteRun(store, runId) {
-  await store.writeRunResult(createBenchmarkResult({ runId }));
+  await store.writeRunResult(createCurrentBenchmarkResult({ runId }));
   await store.writeRunResult(createComparisonResult({ runId }));
   await store.finalizeRun(runId);
 }
@@ -37,7 +45,7 @@ test("multiple runs coexist and latest changes only after finalize", async (t) =
   const { store } = await createTestStore(t);
   await writeCompleteRun(store, defaultRunId);
 
-  await store.writeRunResult(createBenchmarkResult({ runId: secondRunId }));
+  await store.writeRunResult(createCurrentBenchmarkResult({ runId: secondRunId }));
   assert.equal((await store.readLatestPointer()).runId, defaultRunId);
 
   const partialRuns = await store.listRuns();
@@ -60,7 +68,7 @@ test("multiple runs coexist and latest changes only after finalize", async (t) =
 test("partial or mismatched runs do not replace latest", async (t) => {
   const { store } = await createTestStore(t);
   await writeCompleteRun(store, defaultRunId);
-  await store.writeRunResult(createBenchmarkResult({ runId: secondRunId }));
+  await store.writeRunResult(createCurrentBenchmarkResult({ runId: secondRunId }));
 
   const changedMetadata = structuredClone(defaultMetadata);
   changedMetadata.compilers.ts7.version = "7.0.3";
@@ -79,14 +87,14 @@ test("finalized artifacts cannot be overwritten", async (t) => {
   const { store } = await createTestStore(t);
   await writeCompleteRun(store, defaultRunId);
   await assert.rejects(
-    store.writeRunResult(createBenchmarkResult()),
+    store.writeRunResult(createCurrentBenchmarkResult()),
     /finalized and cannot be changed/
   );
 });
 
 test("invalid run IDs are rejected before path construction", async (t) => {
   const { store } = await createTestStore(t);
-  const invalid = createBenchmarkResult({ runId: "../outside" });
+  const invalid = createCurrentBenchmarkResult({ runId: "../outside" });
   await assert.rejects(
     store.writeRunResult(invalid),
     /Result schema validation failed|Invalid run ID/
@@ -124,7 +132,7 @@ test("compatibility mirrors move only when a run is finalized", async (t) => {
   });
   await writeCompleteRun(store, defaultRunId);
 
-  await store.writeRunResult(createBenchmarkResult({ runId: secondRunId }));
+  await store.writeRunResult(createCurrentBenchmarkResult({ runId: secondRunId }));
   const partialMirror = JSON.parse(
     await readFile(path.join(baseDir, "benchmark.json"), "utf8")
   );
@@ -142,7 +150,7 @@ test("compatibility mirrors move only when a run is finalized", async (t) => {
 
 test("an artifact published before its manifest update can be recovered", async (t) => {
   const { baseDir, store } = await createTestStore(t);
-  const benchmark = createBenchmarkResult();
+  const benchmark = createCurrentBenchmarkResult();
   const runDir = path.join(baseDir, "runs", defaultRunId);
   await mkdir(runDir, { recursive: true });
   await writeFile(path.join(runDir, "manifest.json"), `${JSON.stringify({

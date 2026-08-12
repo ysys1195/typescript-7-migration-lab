@@ -40,8 +40,8 @@ npm run test:schema
 
 ## Compatibility policy
 
-現在の出力versionは`3.1.0`であり、readerは過去の`1.0.0`、`2.0.0`、`3.0.0`も
-検証できる。
+現在の出力versionは`4.0.0`であり、readerは過去の`1.0.0`、`2.0.0`、`3.0.0`、
+`3.1.0`も検証できる。
 version 2では、cold／warmup／measured attempt、失敗状態、timeout、実行順、
 mean、母標準偏差、外れ値候補を追加した。成功した計測が0件の場合は、存在しない
 統計値を`null`として保存し、`NaN`や`Infinity`をJSONへ書き込まない。
@@ -51,6 +51,10 @@ attemptだけを対象とするresource statisticsを追加した。未取得値
 version 3.1ではvariantごとの`applicableFixtures`とscaling metadataを追加した。
 これにより、通常projectだけに適用する`--checkers`と、build modeだけに適用する
 `--builders`を無効な直積にせず、疎なfixture／variant pairとして保存する。
+version 4ではcomparisonのdiagnosticsをcode、category、file、line、column、messageへ
+構造化し、diagnostics差と終了コード差を分離した。raw stdout／stderrと既知差の
+識別子も保存する。従来の文字列配列から型が変わるためmajor versionを更新し、
+readerはversion 1〜3.1のlegacy comparison形式も引き続き検証する。
 
 `schemaVersion`はSemantic Versioningに準じて更新する。
 

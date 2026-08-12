@@ -223,8 +223,10 @@ function validateScalingConfiguration(configuration, fixtureNames) {
 
 function validateBenchmarkV2(value) {
   const { configuration } = value;
-  const resourceEnabled = ["3.0.0", "3.1.0"].includes(value.schemaVersion);
-  const scalingEnabled = value.schemaVersion === "3.1.0";
+  const resourceEnabled = ["3.0.0", "3.1.0", "4.0.0"].includes(
+    value.schemaVersion
+  );
+  const scalingEnabled = ["3.1.0", "4.0.0"].includes(value.schemaVersion);
   if (resourceEnabled && !configuration.resourceMeasurement) {
     semanticError("Schema 3 benchmark requires resourceMeasurement configuration.");
   }
@@ -402,10 +404,97 @@ function validateBenchmarkV2(value) {
   }
 }
 
+function diagnosticMultisetDifference(left, right) {
+  const keyFor = (diagnostic) => JSON.stringify([
+    diagnostic.code,
+    diagnostic.category,
+    diagnostic.file,
+    diagnostic.line,
+    diagnostic.column,
+    diagnostic.message
+  ]);
+  const counts = new Map();
+  for (const diagnostic of right) {
+    const key = keyFor(diagnostic);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return left.filter((diagnostic) => {
+    const key = keyFor(diagnostic);
+    const count = counts.get(key) ?? 0;
+    if (count === 0) return true;
+    counts.set(key, count - 1);
+    return false;
+  });
+}
+
+function validateComparisonV4(value) {
+  const configured = value.configuration.diagnosticFixtures.map(
+    (fixture) => fixture.name
+  );
+  const observed = value.diagnostics.map((result) => result.fixture);
+  if (
+    new Set(configured).size !== configured.length ||
+    new Set(observed).size !== observed.length ||
+    !isDeepStrictEqual([...configured].sort(), [...observed].sort())
+  ) {
+    semanticError("Comparison fixtures must be non-empty, unique, and complete.");
+  }
+
+  for (const result of value.diagnostics) {
+    const label = `Diagnostic comparison ${result.fixture}`;
+    const expectedOnlyTs6 = diagnosticMultisetDifference(
+      result.ts6.diagnostics,
+      result.ts7.diagnostics
+    );
+    const expectedOnlyTs7 = diagnosticMultisetDifference(
+      result.ts7.diagnostics,
+      result.ts6.diagnostics
+    );
+    if (
+      !isDeepStrictEqual(result.difference.diagnostics.onlyTs6, expectedOnlyTs6) ||
+      !isDeepStrictEqual(result.difference.diagnostics.onlyTs7, expectedOnlyTs7)
+    ) {
+      semanticError(`${label} has inconsistent structured differences.`);
+    }
+    const diagnosticsDiffer = expectedOnlyTs6.length > 0 || expectedOnlyTs7.length > 0;
+    const exitCodesDiffer = result.ts6.exitCode !== result.ts7.exitCode;
+    if (
+      result.difference.diagnostics.status !==
+        (diagnosticsDiffer ? "DIFFERENT" : "IDENTICAL") ||
+      result.difference.exitCode.status !==
+        (exitCodesDiffer ? "DIFFERENT" : "IDENTICAL") ||
+      result.difference.exitCode.ts6 !== result.ts6.exitCode ||
+      result.difference.exitCode.ts7 !== result.ts7.exitCode
+    ) {
+      semanticError(`${label} has inconsistent diagnostic or exit-code status.`);
+    }
+
+    const hasDifference = diagnosticsDiffer || exitCodesDiffer;
+    if (result.classification === "SUPPORTED_IDENTICALLY" && (
+      hasDifference || result.knownDifferences.length !== 0
+    )) {
+      semanticError(`${label} cannot be identical when a difference is present.`);
+    }
+    if (result.classification === "SUPPORTED_WITH_DIFFERENCE" && (
+      !hasDifference || result.knownDifferences.length === 0
+    )) {
+      semanticError(`${label} requires a documented known difference.`);
+    }
+    if (result.classification === "POSSIBLE_REGRESSION" && (
+      !hasDifference || result.knownDifferences.length !== 0
+    )) {
+      semanticError(`${label} must contain only unmatched differences.`);
+    }
+  }
+}
+
 export function validateResultDocument(value) {
   if (validate(value)) {
     if (value.kind === "benchmark" && value.schemaVersion !== "1.0.0") {
       validateBenchmarkV2(value);
+    }
+    if (value.kind === "comparison" && value.schemaVersion === "4.0.0") {
+      validateComparisonV4(value);
     }
     return value;
   }

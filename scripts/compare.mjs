@@ -8,6 +8,13 @@ import {
   run,
   writeResultJson
 } from "./lib.mjs";
+import {
+  classifyDiagnosticDifference,
+  createDiagnosticDifference,
+  createDiagnosticOutcome,
+  manifestPath,
+  readKnownDifferenceManifest
+} from "./diagnostics.mjs";
 
 const diagnosticFixtures = [
   { name: "small" },
@@ -15,8 +22,12 @@ const diagnosticFixtures = [
   { name: "jsx" },
   { name: "jsdoc" },
   { name: "diagnostics" },
-  { name: "legacy-options", expectedDifference: true }
+  { name: "legacy-options" }
 ];
+const knownDifferenceManifestPath = manifestPath(root);
+const knownDifferenceManifest = await readKnownDifferenceManifest(
+  knownDifferenceManifestPath
+);
 
 function normalizeDiagnostics(output) {
   return output
@@ -37,22 +48,23 @@ for (const fixtureConfig of diagnosticFixtures) {
     run(compilers.ts6, args),
     run(compilers.ts7, args)
   ]);
-  const ts6Lines = normalizeDiagnostics(ts6.stdout + ts6.stderr);
-  const ts7Lines = normalizeDiagnostics(ts7.stdout + ts7.stderr);
-  const sameDiagnostics = JSON.stringify(ts6Lines) === JSON.stringify(ts7Lines);
-  let status = "DIFFERENT";
-  if (sameDiagnostics && ts6.exitCode === ts7.exitCode) status = "IDENTICAL";
-  else if (sameDiagnostics) status = "SAME_DIAGNOSTICS_EXIT_DIFFERENT";
-  else if (fixtureConfig.expectedDifference) status = "EXPECTED_DIFFERENCE";
+  const ts6Outcome = createDiagnosticOutcome(ts6, { rootDirectory: root });
+  const ts7Outcome = createDiagnosticOutcome(ts7, { rootDirectory: root });
+  const difference = createDiagnosticDifference(ts6Outcome, ts7Outcome);
+  const classification = classifyDiagnosticDifference(
+    fixture,
+    difference,
+    knownDifferenceManifest
+  );
 
   diagnosticResults.push({
     fixture,
-    status,
-    expectedDifference: fixtureConfig.expectedDifference ?? false,
-    ts6: { exitCode: ts6.exitCode, diagnostics: ts6Lines },
-    ts7: { exitCode: ts7.exitCode, diagnostics: ts7Lines }
+    ...classification,
+    difference,
+    ts6: ts6Outcome,
+    ts7: ts7Outcome
   });
-  console.log(`${fixture.padEnd(16)} ${status}`);
+  console.log(`${fixture.padEnd(16)} ${classification.classification}`);
 }
 
 async function listFiles(directory, base = directory) {
@@ -101,6 +113,10 @@ try {
   const stored = await writeResultJson("comparison.json", {
     ...await createResultEnvelope("comparison", {
       diagnosticFixtures,
+      knownDiagnosticDifferences: {
+        path: path.relative(root, knownDifferenceManifestPath),
+        version: knownDifferenceManifest.version
+      },
       emitFixture: "emit"
     }),
     diagnostics: diagnosticResults,

@@ -265,18 +265,34 @@ export function createLegacyBenchmarkResult() {
 
 export function createComparisonResult(overrides = {}) {
   return {
-    ...common(overrides),
+    ...common({ schemaVersion: "4.0.0", ...overrides }),
     kind: "comparison",
     configuration: {
       diagnosticFixtures: [{ name: "small" }],
+      knownDiagnosticDifferences: {
+        path: "compatibility/known-diagnostic-differences.json",
+        version: 1
+      },
       emitFixture: "emit"
     },
     diagnostics: [{
       fixture: "small",
-      status: "IDENTICAL",
-      expectedDifference: false,
-      ts6: { exitCode: 0, diagnostics: [] },
-      ts7: { exitCode: 0, diagnostics: [] }
+      classification: "SUPPORTED_IDENTICALLY",
+      knownDifferences: [],
+      difference: {
+        diagnostics: { status: "IDENTICAL", onlyTs6: [], onlyTs7: [] },
+        exitCode: { status: "IDENTICAL", ts6: 0, ts7: 0 }
+      },
+      ts6: {
+        exitCode: 0,
+        diagnostics: [],
+        rawOutput: { stdout: "", stderr: "" }
+      },
+      ts7: {
+        exitCode: 0,
+        diagnostics: [],
+        rawOutput: { stdout: "", stderr: "" }
+      }
     }],
     emit: {
       status: "IDENTICAL",

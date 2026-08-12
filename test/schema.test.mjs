@@ -21,6 +21,12 @@ test("scaling benchmark result follows schema version 3.1.0", () => {
   assert.equal(validateResultDocument(scaling), scaling);
 });
 
+test("current benchmark result follows schema version 4.0.0", () => {
+  const current = createScalingBenchmarkResult();
+  current.schemaVersion = "4.0.0";
+  assert.equal(validateResultDocument(current), current);
+});
+
 test("schema version 3.1 requires complete checker and builder matrices", () => {
   const invalid = createScalingBenchmarkResult();
   const removed = invalid.configuration.variants.pop();
@@ -296,8 +302,64 @@ test("version 3 benchmark rejects missing fixture results", () => {
   );
 });
 
-test("comparison result follows schema version 3.0.0", () => {
+test("comparison result follows schema version 4.0.0", () => {
   assert.equal(validateResultDocument(comparison), comparison);
+});
+
+test("legacy comparison results remain readable", () => {
+  const legacy = {
+    ...structuredClone(comparison),
+    schemaVersion: "3.1.0",
+    configuration: {
+      diagnosticFixtures: [{ name: "small" }],
+      emitFixture: "emit"
+    },
+    diagnostics: [{
+      fixture: "small",
+      status: "IDENTICAL",
+      expectedDifference: false,
+      ts6: { exitCode: 0, diagnostics: [] },
+      ts7: { exitCode: 0, diagnostics: [] }
+    }]
+  };
+  assert.equal(validateResultDocument(legacy), legacy);
+});
+
+test("version 4 comparison separates diagnostic and exit-code differences", () => {
+  const different = structuredClone(comparison);
+  different.diagnostics[0].classification = "POSSIBLE_REGRESSION";
+  different.diagnostics[0].ts7.exitCode = 1;
+  different.diagnostics[0].difference.exitCode = {
+    status: "DIFFERENT",
+    ts6: 0,
+    ts7: 1
+  };
+  assert.equal(validateResultDocument(different), different);
+});
+
+test("version 4 comparison rejects inconsistent structured differences", () => {
+  const invalid = structuredClone(comparison);
+  invalid.diagnostics[0].difference.diagnostics.onlyTs7.push({
+    code: 2322,
+    category: "error",
+    file: "fixtures/small/src/index.ts",
+    line: 1,
+    column: 1,
+    message: "Unexpected diagnostic"
+  });
+  assert.throws(
+    () => validateResultDocument(invalid),
+    /semantic validation failed/
+  );
+});
+
+test("version 4 comparison requires evidence for known differences", () => {
+  const invalid = structuredClone(comparison);
+  invalid.diagnostics[0].classification = "SUPPORTED_WITH_DIFFERENCE";
+  assert.throws(
+    () => validateResultDocument(invalid),
+    /semantic validation failed/
+  );
 });
 
 test("missing schemaVersion is rejected", () => {
@@ -311,7 +373,7 @@ test("missing schemaVersion is rejected", () => {
 
 test("unsupported schemaVersion is rejected", () => {
   const invalid = structuredClone(benchmark);
-  invalid.schemaVersion = "4.0.0";
+  invalid.schemaVersion = "5.0.0";
   assert.throws(
     () => validateResultDocument(invalid),
     /Result schema validation failed/

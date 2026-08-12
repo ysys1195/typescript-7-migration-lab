@@ -402,6 +402,8 @@ Labels: `phase: compatibility`, `type: enhancement`, `priority: high`
 - 終了コード差を独立して記録
 - 既知差manifestを追加
 - 未知差を`POSSIBLE_REGRESSION`として分類
+- raw stdout／stderrを保持し、構造化後も元の出力を確認可能にする
+- fixture名だけでなく差分全体を既知差manifestと照合する
 
 Depends on: Issue 1
 
