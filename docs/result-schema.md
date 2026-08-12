@@ -76,3 +76,8 @@ readerは、対応していないMAJOR versionを拒否する。schemaを変更�
 
 結果の保存場所、manifest、latest pointerについては`docs/result-history.md`を
 参照する。
+
+2つのcomplete runから生成する履歴比較JSONは、測定artifactとは独立した
+`schemas/run-comparison.schema.json`（version `1.0.0`）で検証する。比較artifactの
+performance classification、machine fingerprint、compatibility fingerprintは
+`docs/historical-comparisons.md`を参照する。

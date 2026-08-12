@@ -227,6 +227,10 @@ manifest検証を実装した。`errors-many`は大量diagnosticsの互換性分
 - 閾値を超えた性能低下を検出できる
 - 異なるマシンの数値を不用意に直接比較しない
 
+Issue #9で、任意のbaseline／target指定、fixture・variant別の変化率、設定可能な
+threshold、machine／Node／入力条件の比較可否判定、Markdown／JSON／CSV exportを
+実装した。compatibilityはstatusとevidence fingerprintの変化を別表で追跡する。
+
 ### Phase 7 — ローカルWeb UI
 
 目的は、CLI出力を読まなくても結果を理解できるようにすること。

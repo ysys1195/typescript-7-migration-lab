@@ -9,6 +9,7 @@ TypeScript 6（JavaScript実装）とTypeScript 7（Goによるネイティブ�
 - [Notion向けポートフォリオ原稿](docs/portfolio-draft.md)
 - [測定結果のschema](docs/result-schema.md)
 - [測定履歴の保存方式](docs/result-history.md)
+- [過去runの比較](docs/historical-comparisons.md)
 - [ベンチマーク手法](docs/benchmark-methodology.md)
 - [CPU・メモリ測定方式](docs/resource-measurement.md)
 - [checker・builder scaling実験](docs/scaling-experiments.md)
@@ -58,12 +59,23 @@ npm run test:store
 npm run test:benchmark
 npm run test:diagnostics
 npm run test:options
+npm run test:history
 npm run runs
 ```
 
 履歴の正本は`results/runs/`です。直下の互換ミラーは最後に正常完了したrunを示す
 移行期間中の既存ツール向けで、reportや将来のUIは`latest.json`または明示した
 run IDから正本を読み込みます。
+
+任意のcomplete runをbaselineとして、最新runまたは明示したtargetと比較できます。
+
+```bash
+npm run compare:runs -- --baseline <run-id>
+npm run compare:runs -- --baseline <run-id> --target <run-id> --threshold 5
+```
+
+比較結果は`reports/comparisons/`へMarkdown、JSON、CSVで生成されます。machineや
+入力条件が異なる場合は数値を表示しつつ、regressionとは断定しません。
 
 ## Measuring different sizes
 

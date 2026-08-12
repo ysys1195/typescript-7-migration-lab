@@ -18,6 +18,7 @@ fixtures/builder-scaling/packages/*/dist/
 *.tsbuildinfo
 results/**
 reports/*.md
+reports/comparisons/
 !results/.gitkeep
 !reports/.gitkeep
 .DS_Store

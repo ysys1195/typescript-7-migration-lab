@@ -1,0 +1,308 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ysys1195/typescript-7-migration-lab/schemas/run-comparison.schema.json",
+  "title": "TypeScript 7 Migration Lab historical run comparison",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "kind",
+    "generatedAt",
+    "thresholdPercent",
+    "baseline",
+    "target",
+    "comparability",
+    "summary",
+    "performance",
+    "compatibility"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "kind": { "const": "run-comparison" },
+    "generatedAt": { "$ref": "#/$defs/timestamp" },
+    "thresholdPercent": { "type": "number", "minimum": 0, "maximum": 1000 },
+    "baseline": { "$ref": "#/$defs/runReference" },
+    "target": { "$ref": "#/$defs/runReference" },
+    "comparability": { "$ref": "#/$defs/comparability" },
+    "summary": { "$ref": "#/$defs/summary" },
+    "performance": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/performanceComparison" }
+    },
+    "compatibility": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/compatibilityComparison" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "runReference": {
+      "type": "object",
+      "required": [
+        "runId",
+        "generatedAt",
+        "schemaVersion",
+        "nodeVersion",
+        "compilers",
+        "git"
+      ],
+      "properties": {
+        "runId": { "$ref": "#/$defs/runId" },
+        "generatedAt": { "$ref": "#/$defs/timestamp" },
+        "schemaVersion": { "type": "string", "minLength": 1 },
+        "nodeVersion": { "type": "string", "minLength": 1 },
+        "compilers": {
+          "type": "object",
+          "required": ["ts6", "ts7"],
+          "properties": {
+            "ts6": { "type": "string", "minLength": 1 },
+            "ts7": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        "git": {
+          "type": "object",
+          "required": ["commitSha", "branch", "dirty"],
+          "properties": {
+            "commitSha": {
+              "oneOf": [
+                { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+                { "type": "null" }
+              ]
+            },
+            "branch": {
+              "oneOf": [
+                { "type": "string", "minLength": 1 },
+                { "type": "null" }
+              ]
+            },
+            "dirty": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "machineDetails": {
+      "type": "object",
+      "required": [
+        "platform",
+        "arch",
+        "cpuModel",
+        "logicalCpuCount",
+        "totalMemoryBytes"
+      ],
+      "properties": {
+        "platform": { "type": "string", "minLength": 1 },
+        "arch": { "type": "string", "minLength": 1 },
+        "cpuModel": { "type": "string", "minLength": 1 },
+        "logicalCpuCount": { "type": "integer", "minimum": 1 },
+        "totalMemoryBytes": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "difference": {
+      "type": "object",
+      "required": ["field", "baseline", "target"],
+      "properties": {
+        "field": { "type": "string", "minLength": 1 },
+        "baseline": {},
+        "target": {}
+      },
+      "additionalProperties": false
+    },
+    "comparability": {
+      "type": "object",
+      "required": [
+        "status",
+        "performanceComparable",
+        "machineMatch",
+        "nodeVersionMatch",
+        "measurementConfigurationMatch",
+        "inputConfigurationMatch",
+        "sourceStateClean",
+        "baselineMachineFingerprint",
+        "targetMachineFingerprint",
+        "baselineMachine",
+        "targetMachine",
+        "differences",
+        "warnings"
+      ],
+      "properties": {
+        "status": { "enum": ["COMPARABLE", "CAUTION"] },
+        "performanceComparable": { "type": "boolean" },
+        "machineMatch": { "type": "boolean" },
+        "nodeVersionMatch": { "type": "boolean" },
+        "measurementConfigurationMatch": { "type": "boolean" },
+        "inputConfigurationMatch": { "type": "boolean" },
+        "sourceStateClean": { "type": "boolean" },
+        "baselineMachineFingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "targetMachineFingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "baselineMachine": { "$ref": "#/$defs/machineDetails" },
+        "targetMachine": { "$ref": "#/$defs/machineDetails" },
+        "differences": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/difference" }
+        },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "classificationCounts": {
+      "type": "object",
+      "required": [
+        "IMPROVEMENT",
+        "STABLE",
+        "REGRESSION",
+        "NOT_COMPARABLE",
+        "ADDED",
+        "REMOVED",
+        "UNAVAILABLE"
+      ],
+      "properties": {
+        "IMPROVEMENT": { "type": "integer", "minimum": 0 },
+        "STABLE": { "type": "integer", "minimum": 0 },
+        "REGRESSION": { "type": "integer", "minimum": 0 },
+        "NOT_COMPARABLE": { "type": "integer", "minimum": 0 },
+        "ADDED": { "type": "integer", "minimum": 0 },
+        "REMOVED": { "type": "integer", "minimum": 0 },
+        "UNAVAILABLE": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "performanceRows",
+        "performanceClassifications",
+        "compatibilityRows",
+        "compatibilityChanges"
+      ],
+      "properties": {
+        "performanceRows": { "type": "integer", "minimum": 0 },
+        "performanceClassifications": { "$ref": "#/$defs/classificationCounts" },
+        "compatibilityRows": { "type": "integer", "minimum": 0 },
+        "compatibilityChanges": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "performanceObservation": {
+      "type": "object",
+      "required": [
+        "status",
+        "medianMs",
+        "meanMs",
+        "p95Ms",
+        "successfulSamples",
+        "plannedSamples"
+      ],
+      "properties": {
+        "status": { "type": "string", "minLength": 1 },
+        "medianMs": { "type": ["number", "null"], "minimum": 0 },
+        "meanMs": { "type": ["number", "null"], "minimum": 0 },
+        "p95Ms": { "type": ["number", "null"], "minimum": 0 },
+        "successfulSamples": { "type": "integer", "minimum": 0 },
+        "plannedSamples": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "performanceComparison": {
+      "type": "object",
+      "required": [
+        "fixture",
+        "variant",
+        "classification",
+        "comparable",
+        "inputsMatch",
+        "baseline",
+        "target",
+        "deltaMs",
+        "deltaPercent",
+        "notes"
+      ],
+      "properties": {
+        "fixture": { "type": "string", "minLength": 1 },
+        "variant": { "type": "string", "minLength": 1 },
+        "classification": {
+          "enum": [
+            "IMPROVEMENT",
+            "STABLE",
+            "REGRESSION",
+            "NOT_COMPARABLE",
+            "ADDED",
+            "REMOVED",
+            "UNAVAILABLE"
+          ]
+        },
+        "comparable": { "type": "boolean" },
+        "inputsMatch": { "type": "boolean" },
+        "baseline": {
+          "oneOf": [
+            { "$ref": "#/$defs/performanceObservation" },
+            { "type": "null" }
+          ]
+        },
+        "target": {
+          "oneOf": [
+            { "$ref": "#/$defs/performanceObservation" },
+            { "type": "null" }
+          ]
+        },
+        "deltaMs": { "type": ["number", "null"] },
+        "deltaPercent": { "type": ["number", "null"] },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "compatibilityObservation": {
+      "type": "object",
+      "required": ["status", "fingerprint"],
+      "properties": {
+        "status": { "type": "string", "minLength": 1 },
+        "fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "compatibilityComparison": {
+      "type": "object",
+      "required": ["area", "key", "change", "baseline", "target"],
+      "properties": {
+        "area": { "enum": ["diagnostics", "emit", "compiler-options"] },
+        "key": { "type": "string", "minLength": 1 },
+        "change": { "enum": ["UNCHANGED", "CHANGED", "ADDED", "REMOVED"] },
+        "baseline": {
+          "oneOf": [
+            { "$ref": "#/$defs/compatibilityObservation" },
+            { "type": "null" }
+          ]
+        },
+        "target": {
+          "oneOf": [
+            { "$ref": "#/$defs/compatibilityObservation" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
