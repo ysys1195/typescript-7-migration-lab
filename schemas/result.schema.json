@@ -12,7 +12,7 @@
     "configuration"
   ],
   "properties": {
-    "schemaVersion": { "enum": ["1.0.0", "2.0.0", "3.0.0", "3.1.0"] },
+    "schemaVersion": { "enum": ["1.0.0", "2.0.0", "3.0.0", "3.1.0", "4.0.0"] },
     "kind": { "enum": ["benchmark", "comparison"] },
     "runId": {
       "type": "string",
@@ -77,14 +77,35 @@
       "then": {
         "required": ["diagnostics", "emit"],
         "properties": {
-          "configuration": { "$ref": "#/$defs/comparisonConfiguration" },
-          "diagnostics": {
-            "type": "array",
-            "items": { "$ref": "#/$defs/diagnosticComparison" }
-          },
           "emit": { "$ref": "#/$defs/emitComparison" },
           "results": false
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": { "schemaVersion": { "const": "4.0.0" } },
+              "required": ["schemaVersion"]
+            },
+            "then": {
+              "properties": {
+                "configuration": { "$ref": "#/$defs/comparisonConfigurationV4" },
+                "diagnostics": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/diagnosticComparisonV4" }
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "configuration": { "$ref": "#/$defs/comparisonConfigurationLegacy" },
+                "diagnostics": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/diagnosticComparisonLegacy" }
+                }
+              }
+            }
+          }
+        ]
       }
     }
   ],
@@ -589,7 +610,7 @@
       },
       "additionalProperties": false
     },
-    "comparisonConfiguration": {
+    "comparisonConfigurationLegacy": {
       "type": "object",
       "required": ["diagnosticFixtures", "emitFixture"],
       "properties": {
@@ -609,7 +630,7 @@
       },
       "additionalProperties": false
     },
-    "diagnosticComparison": {
+    "diagnosticComparisonLegacy": {
       "type": "object",
       "required": ["fixture", "status", "expectedDifference", "ts6", "ts7"],
       "properties": {
@@ -623,12 +644,12 @@
           ]
         },
         "expectedDifference": { "type": "boolean" },
-        "ts6": { "$ref": "#/$defs/diagnosticOutcome" },
-        "ts7": { "$ref": "#/$defs/diagnosticOutcome" }
+        "ts6": { "$ref": "#/$defs/diagnosticOutcomeLegacy" },
+        "ts7": { "$ref": "#/$defs/diagnosticOutcomeLegacy" }
       },
       "additionalProperties": false
     },
-    "diagnosticOutcome": {
+    "diagnosticOutcomeLegacy": {
       "type": "object",
       "required": ["exitCode", "diagnostics"],
       "properties": {
@@ -641,6 +662,153 @@
         }
       },
       "additionalProperties": false
+    },
+    "comparisonConfigurationV4": {
+      "type": "object",
+      "required": [
+        "diagnosticFixtures",
+        "knownDiagnosticDifferences",
+        "emitFixture"
+      ],
+      "properties": {
+        "diagnosticFixtures": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        },
+        "knownDiagnosticDifferences": {
+          "type": "object",
+          "required": ["path", "version"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "version": { "const": 1 }
+          },
+          "additionalProperties": false
+        },
+        "emitFixture": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "diagnosticComparisonV4": {
+      "type": "object",
+      "required": [
+        "fixture",
+        "classification",
+        "knownDifferences",
+        "difference",
+        "ts6",
+        "ts7"
+      ],
+      "properties": {
+        "fixture": { "type": "string", "minLength": 1 },
+        "classification": {
+          "enum": [
+            "SUPPORTED_IDENTICALLY",
+            "SUPPORTED_WITH_DIFFERENCE",
+            "POSSIBLE_REGRESSION"
+          ]
+        },
+        "knownDifferences": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/knownDiagnosticDifference" }
+        },
+        "difference": { "$ref": "#/$defs/structuredDiagnosticDifference" },
+        "ts6": { "$ref": "#/$defs/diagnosticOutcomeV4" },
+        "ts7": { "$ref": "#/$defs/diagnosticOutcomeV4" }
+      },
+      "additionalProperties": false
+    },
+    "knownDiagnosticDifference": {
+      "type": "object",
+      "required": ["id", "rationale"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "structuredDiagnosticDifference": {
+      "type": "object",
+      "required": ["diagnostics", "exitCode"],
+      "properties": {
+        "diagnostics": {
+          "type": "object",
+          "required": ["status", "onlyTs6", "onlyTs7"],
+          "properties": {
+            "status": { "enum": ["IDENTICAL", "DIFFERENT"] },
+            "onlyTs6": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/structuredDiagnostic" }
+            },
+            "onlyTs7": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/structuredDiagnostic" }
+            }
+          },
+          "additionalProperties": false
+        },
+        "exitCode": {
+          "type": "object",
+          "required": ["status", "ts6", "ts7"],
+          "properties": {
+            "status": { "enum": ["IDENTICAL", "DIFFERENT"] },
+            "ts6": { "$ref": "#/$defs/nullableExitCode" },
+            "ts7": { "$ref": "#/$defs/nullableExitCode" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "diagnosticOutcomeV4": {
+      "type": "object",
+      "required": ["exitCode", "diagnostics", "rawOutput"],
+      "properties": {
+        "exitCode": { "$ref": "#/$defs/nullableExitCode" },
+        "diagnostics": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/structuredDiagnostic" }
+        },
+        "rawOutput": {
+          "type": "object",
+          "required": ["stdout", "stderr"],
+          "properties": {
+            "stdout": { "type": "string" },
+            "stderr": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "structuredDiagnostic": {
+      "type": "object",
+      "required": ["code", "category", "file", "line", "column", "message"],
+      "properties": {
+        "code": { "type": "integer", "minimum": 0 },
+        "category": { "enum": ["error", "warning", "suggestion", "message"] },
+        "file": {
+          "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+        },
+        "line": {
+          "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+        },
+        "column": {
+          "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+        },
+        "message": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "nullableExitCode": {
+      "oneOf": [{ "type": "integer" }, { "type": "null" }]
     },
     "emitComparison": {
       "type": "object",

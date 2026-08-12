@@ -147,21 +147,38 @@ const resourceReasons = [...new Set(benchmark.results.flatMap((result) => {
 }))];
 const scalingReport = formatScalingReport(benchmark);
 
-const diagnosticRows = comparison.diagnostics.map((item) =>
-  `| ${item.fixture} | ${item.status} | ${item.ts6.exitCode} | ${item.ts7.exitCode} |`
+const structuredDiagnostics = comparison.schemaVersion === "4.0.0";
+const diagnosticRows = comparison.diagnostics.map((item) => structuredDiagnostics
+  ? `| ${item.fixture} | ${item.classification} | ` +
+    `${item.difference.diagnostics.status} | ${item.difference.exitCode.status} | ` +
+    `${item.ts6.exitCode} | ${item.ts7.exitCode} |`
+  : `| ${item.fixture} | ${item.status} | — | — | ` +
+    `${item.ts6.exitCode} | ${item.ts7.exitCode} |`
 );
 
-const diagnosticNotes = comparison.diagnostics
-  .filter((item) => item.status !== "IDENTICAL")
-  .map((item) => {
+const diagnosticNotes = comparison.diagnostics.flatMap((item) => {
+  if (!structuredDiagnostics) {
+    if (item.status === "IDENTICAL") return [];
     if (item.status === "SAME_DIAGNOSTICS_EXIT_DIFFERENT") {
-      return `- \`${item.fixture}\`: diagnostics are identical; only the process exit code differs.`;
+      return [`- \`${item.fixture}\`: diagnostics are identical; only the process exit code differs.`];
     }
     if (item.status === "EXPECTED_DIFFERENCE") {
-      return `- \`${item.fixture}\`: expected difference; TS6 reports deprecations while TS7 reports removals.`;
+      return [`- \`${item.fixture}\`: expected difference; TS6 reports deprecations while TS7 reports removals.`];
     }
-    return `- \`${item.fixture}\`: inspect \`${comparisonPath}\` for the exact difference.`;
-  });
+    return [`- \`${item.fixture}\`: inspect \`${comparisonPath}\` for the exact difference.`];
+  }
+  if (item.classification === "SUPPORTED_IDENTICALLY") return [];
+  if (item.classification === "SUPPORTED_WITH_DIFFERENCE") {
+    const ids = item.knownDifferences.map((difference) => difference.id).join(", ");
+    return [`- \`${item.fixture}\`: matched known difference ${ids}.`];
+  }
+  return [
+    `- \`${item.fixture}\`: POSSIBLE_REGRESSION; ` +
+    `${item.difference.diagnostics.onlyTs6.length} TS6-only and ` +
+    `${item.difference.diagnostics.onlyTs7.length} TS7-only diagnostics. ` +
+    `Inspect \`${comparisonPath}\`, including raw compiler output.`
+  ];
+});
 
 const markdown = `# TypeScript 6 vs 7 Lab Report
 
@@ -232,8 +249,8 @@ ${scalingReport}
 
 ## Diagnostics
 
-| Fixture | Result | TS6 exit | TS7 exit |
-|---|---|---:|---:|
+| Fixture | Classification | Diagnostics | Exit code | TS6 exit | TS7 exit |
+|---|---|---|---|---:|---:|
 ${diagnosticRows.join("\n")}
 
 ${diagnosticNotes.join("\n")}

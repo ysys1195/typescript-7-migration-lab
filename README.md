@@ -12,6 +12,7 @@ TypeScript 6（JavaScript実装）とTypeScript 7（Goによるネイティブ�
 - [ベンチマーク手法](docs/benchmark-methodology.md)
 - [CPU・メモリ測定方式](docs/resource-measurement.md)
 - [checker・builder scaling実験](docs/scaling-experiments.md)
+- [diagnosticsの構造化比較](docs/diagnostic-comparison.md)
 
 このラボでは次の問いを扱います。
 
@@ -53,6 +54,7 @@ npm run validate
 npm run test:schema
 npm run test:store
 npm run test:benchmark
+npm run test:diagnostics
 npm run runs
 ```
 
@@ -96,6 +98,11 @@ filesystem cacheなどを消去した厳密なcold環境ではありません。
 
 compiler error、timeout、runner errorはattemptとしてstdout／stderrとともに保存し、
 残りのfixtureとvariantの測定を継続します。
+
+diagnostics比較では、各項目をcode、category、file、line、column、messageへ分解し、
+終了コードの差とdiagnosticsの差を別々に記録します。既知差は
+`compatibility/known-diagnostic-differences.json`との完全一致で判定し、manifestに
+ない差は`POSSIBLE_REGRESSION`としてraw stdout／stderrとともに保持します。
 
 CPU timeとpeak RSSは、利用可能な環境ではOSの`/usr/bin/time`で取得します。
 取得できない値は0で代用せず、理由付きの`unavailable`として保存します。
