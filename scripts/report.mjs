@@ -147,7 +147,9 @@ const resourceReasons = [...new Set(benchmark.results.flatMap((result) => {
 }))];
 const scalingReport = formatScalingReport(benchmark);
 
-const structuredDiagnostics = comparison.schemaVersion === "4.0.0";
+const structuredDiagnostics = ["4.0.0", "4.1.0"].includes(
+  comparison.schemaVersion
+);
 const diagnosticRows = comparison.diagnostics.map((item) => structuredDiagnostics
   ? `| ${item.fixture} | ${item.classification} | ` +
     `${item.difference.diagnostics.status} | ${item.difference.exitCode.status} | ` +
@@ -179,6 +181,20 @@ const diagnosticNotes = comparison.diagnostics.flatMap((item) => {
     `Inspect \`${comparisonPath}\`, including raw compiler output.`
   ];
 });
+
+const compilerOptionResults = comparison.compilerOptions ?? [];
+const compilerOptionRows = compilerOptionResults.map((result) => {
+  const ts6Codes = result.ts6.diagnostics.map((diagnostic) => `TS${diagnostic.code}`)
+    .join(", ") || "—";
+  const ts7Codes = result.ts7.diagnostics.map((diagnostic) => `TS${diagnostic.code}`)
+    .join(", ") || "—";
+  return `| ${result.option} | ${result.classifications.join(", ")} | ` +
+    `${result.status} | ${result.ts6.exitCode} / ${ts6Codes} | ` +
+    `${result.ts7.exitCode} / ${ts7Codes} | ${result.migration} |`;
+});
+const compilerOptionRegressions = compilerOptionResults.filter(
+  (result) => result.status === "POSSIBLE_REGRESSION"
+);
 
 const markdown = `# TypeScript 6 vs 7 Lab Report
 
@@ -254,6 +270,30 @@ ${scalingReport}
 ${diagnosticRows.join("\n")}
 
 ${diagnosticNotes.join("\n")}
+
+## Compiler option migration
+
+\`DEFAULT_CHANGED\` entries describe defaults introduced by TS6 and adopted by TS7;
+they are migration concerns from older TypeScript versions, not TS6-to-TS7 divergences.
+Every row is checked against the pinned TS6 and TS7 compiler output.
+
+${compilerOptionRows.length
+  ? `| Option | Classification | Observation | TS6 exit / codes | TS7 exit / codes | Migration |\n|---|---|---|---|---|---|\n${compilerOptionRows.join("\n")}`
+  : "Compiler option catalog data is unavailable for this schema version."}
+
+${compilerOptionRegressions.length
+  ? `Possible regressions: ${compilerOptionRegressions.map((result) => `\`${result.id}\``).join(", ")}. Inspect \`${comparisonPath}\` for raw output.`
+  : compilerOptionRows.length
+    ? "All compiler option probes matched their checked-in expectations."
+    : ""}
+
+### Reproduction commands
+
+${compilerOptionResults.length
+  ? compilerOptionResults.map((result) =>
+    `- \`${result.id}\`: \`${result.reproduction}\` ([intent source](${result.source}))`
+  ).join("\n")
+  : "No compiler option probes were recorded."}
 
 ## Emit
 

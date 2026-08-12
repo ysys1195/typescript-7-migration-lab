@@ -12,7 +12,7 @@
     "configuration"
   ],
   "properties": {
-    "schemaVersion": { "enum": ["1.0.0", "2.0.0", "3.0.0", "3.1.0", "4.0.0"] },
+    "schemaVersion": { "enum": ["1.0.0", "2.0.0", "3.0.0", "3.1.0", "4.0.0", "4.1.0"] },
     "kind": { "enum": ["benchmark", "comparison"] },
     "runId": {
       "type": "string",
@@ -26,6 +26,7 @@
     "configuration": {},
     "results": { "type": "array" },
     "diagnostics": { "type": "array" },
+    "compilerOptions": { "type": "array" },
     "emit": { "type": "object" }
   },
   "additionalProperties": false,
@@ -39,6 +40,7 @@
         "required": ["results"],
         "properties": {
           "diagnostics": false,
+          "compilerOptions": false,
           "emit": false
         },
         "allOf": [
@@ -83,7 +85,9 @@
         "allOf": [
           {
             "if": {
-              "properties": { "schemaVersion": { "const": "4.0.0" } },
+              "properties": {
+                "schemaVersion": { "enum": ["4.0.0", "4.1.0"] }
+              },
               "required": ["schemaVersion"]
             },
             "then": {
@@ -92,6 +96,10 @@
                 "diagnostics": {
                   "type": "array",
                   "items": { "$ref": "#/$defs/diagnosticComparisonV4" }
+                },
+                "compilerOptions": {
+                  "type": "array",
+                  "items": { "$ref": "#/$defs/compilerOptionComparison" }
                 }
               }
             },
@@ -101,7 +109,8 @@
                 "diagnostics": {
                   "type": "array",
                   "items": { "$ref": "#/$defs/diagnosticComparisonLegacy" }
-                }
+                },
+                "compilerOptions": false
               }
             }
           }
@@ -692,6 +701,15 @@
           },
           "additionalProperties": false
         },
+        "compilerOptionCatalog": {
+          "type": "object",
+          "required": ["path", "version"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "version": { "const": 1 }
+          },
+          "additionalProperties": false
+        },
         "emitFixture": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
@@ -809,6 +827,109 @@
     },
     "nullableExitCode": {
       "oneOf": [{ "type": "integer" }, { "type": "null" }]
+    },
+    "compilerOptionComparison": {
+      "type": "object",
+      "required": [
+        "id",
+        "option",
+        "classifications",
+        "transition",
+        "fixture",
+        "rationale",
+        "migration",
+        "source",
+        "reproduction",
+        "probe",
+        "status",
+        "ts6",
+        "ts7"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "option": { "type": "string", "minLength": 1 },
+        "classifications": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["DEPRECATED_IN_TS6", "REMOVED_IN_TS7", "DEFAULT_CHANGED"]
+          }
+        },
+        "transition": {
+          "enum": [
+            "TS6_DEPRECATION_TO_TS7_REMOVAL",
+            "TS6_DEFAULT_ADOPTED_BY_TS7"
+          ]
+        },
+        "fixture": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "string", "minLength": 1 },
+        "migration": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "pattern": "^https://" },
+        "reproduction": { "type": "string", "minLength": 1 },
+        "probe": {
+          "type": "object",
+          "required": ["kind", "expected"],
+          "properties": {
+            "kind": { "enum": ["diagnostics", "emit-files"] },
+            "expected": {
+              "type": "object",
+              "required": ["ts6", "ts7"],
+              "properties": {
+                "ts6": { "$ref": "#/$defs/compilerOptionExpectation" },
+                "ts7": { "$ref": "#/$defs/compilerOptionExpectation" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "status": { "enum": ["MATCHED_EXPECTATION", "POSSIBLE_REGRESSION"] },
+        "ts6": { "$ref": "#/$defs/compilerOptionOutcome" },
+        "ts7": { "$ref": "#/$defs/compilerOptionOutcome" }
+      },
+      "additionalProperties": false
+    },
+    "compilerOptionExpectation": {
+      "type": "object",
+      "required": ["exitCode", "diagnosticCodes", "emittedFiles"],
+      "properties": {
+        "exitCode": { "$ref": "#/$defs/nullableExitCode" },
+        "diagnosticCodes": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "emittedFiles": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "compilerOptionOutcome": {
+      "type": "object",
+      "required": ["exitCode", "diagnostics", "rawOutput", "emittedFiles"],
+      "properties": {
+        "exitCode": { "$ref": "#/$defs/nullableExitCode" },
+        "diagnostics": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/structuredDiagnostic" }
+        },
+        "rawOutput": {
+          "type": "object",
+          "required": ["stdout", "stderr"],
+          "properties": {
+            "stdout": { "type": "string" },
+            "stderr": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "emittedFiles": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
     },
     "emitComparison": {
       "type": "object",

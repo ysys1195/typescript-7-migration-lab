@@ -13,6 +13,7 @@ TypeScript 6（JavaScript実装）とTypeScript 7（Goによるネイティブ�
 - [CPU・メモリ測定方式](docs/resource-measurement.md)
 - [checker・builder scaling実験](docs/scaling-experiments.md)
 - [diagnosticsの構造化比較](docs/diagnostic-comparison.md)
+- [compiler option migration catalog](docs/compiler-options.md)
 
 このラボでは次の問いを扱います。
 
@@ -55,6 +56,7 @@ npm run test:schema
 npm run test:store
 npm run test:benchmark
 npm run test:diagnostics
+npm run test:options
 npm run runs
 ```
 
@@ -104,6 +106,15 @@ diagnostics比較では、各項目をcode、category、file、line、column、m
 `compatibility/known-diagnostic-differences.json`との完全一致で判定し、manifestに
 ない差は`POSSIBLE_REGRESSION`としてraw stdout／stderrとともに保持します。
 
+compiler option catalogは、TS6でdeprecated・TS7でremovedとなる設定と、TS6で
+導入されTS7が引き継ぐdefault changeを個別fixtureで検証します。全件または1件を
+再実行できます。
+
+```bash
+npm run options
+npm run options -- --id target-es5
+```
+
 CPU timeとpeak RSSは、利用可能な環境ではOSの`/usr/bin/time`で取得します。
 取得できない値は0で代用せず、理由付きの`unavailable`として保存します。
 
@@ -134,6 +145,7 @@ macOSでは`-lp`のprobeでCPU時間だけ取得できた場合、collector
 - `diagnostics`: 意図的な型エラー
 - `emit`: JavaScriptと`.d.ts`の比較
 - `legacy-options`: TS7で削除・変更された設定の観察
+- `compiler-options`: optionごとの最小再現fixture
 
 ## Important limitation
 

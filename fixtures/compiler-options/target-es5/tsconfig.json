@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES5",
+    "module": "ESNext",
+    "noEmit": true
+  },
+  "files": ["../shared/index.ts"]
+}

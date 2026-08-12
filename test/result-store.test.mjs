@@ -16,7 +16,7 @@ const secondRunId = "223e4567-e89b-42d3-b456-426614174001";
 function createCurrentBenchmarkResult(overrides = {}) {
   return {
     ...createScalingBenchmarkResult(),
-    schemaVersion: "4.0.0",
+    schemaVersion: "4.1.0",
     ...overrides
   };
 }

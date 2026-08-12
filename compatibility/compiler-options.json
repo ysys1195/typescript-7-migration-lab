@@ -1,0 +1,221 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "target-es5",
+      "option": "target=ES5",
+      "classifications": ["DEPRECATED_IN_TS6", "REMOVED_IN_TS7"],
+      "transition": "TS6_DEPRECATION_TO_TS7_REMOVAL",
+      "fixture": "fixtures/compiler-options/target-es5",
+      "rationale": "ES5 is below TypeScript 7's minimum supported emit target.",
+      "migration": "Choose ES2015 or a newer target and use a separate transpiler when an older runtime must still be supported.",
+      "source": "https://devblogs.microsoft.com/typescript/announcing-typescript-7-0-beta/",
+      "reproduction": "npm run options -- --id target-es5",
+      "probe": {
+        "kind": "diagnostics",
+        "expected": {
+          "ts6": { "exitCode": 2, "diagnosticCodes": [5107], "emittedFiles": [] },
+          "ts7": { "exitCode": 1, "diagnosticCodes": [5108], "emittedFiles": [] }
+        }
+      }
+    },
+    {
+      "id": "module-amd",
+      "option": "module=AMD",
+      "classifications": ["DEPRECATED_IN_TS6", "REMOVED_IN_TS7"],
+      "transition": "TS6_DEPRECATION_TO_TS7_REMOVAL",
+      "fixture": "fixtures/compiler-options/module-amd",
+      "rationale": "AMD emit was deprecated in TypeScript 6 and is not implemented by TypeScript 7.",
+      "migration": "Use ESNext or Preserve module emit together with a bundler or browser module loader.",
+      "source": "https://devblogs.microsoft.com/typescript/announcing-typescript-7-0-beta/",
+      "reproduction": "npm run options -- --id module-amd",
+      "probe": {
+        "kind": "diagnostics",
+        "expected": {
+          "ts6": { "exitCode": 2, "diagnosticCodes": [5107], "emittedFiles": [] },
+          "ts7": { "exitCode": 1, "diagnosticCodes": [5095, 5108], "emittedFiles": [] }
+        }
+      }
+    },
+    {
+      "id": "module-resolution-node10",
+      "option": "moduleResolution=node10",
+      "classifications": ["DEPRECATED_IN_TS6", "REMOVED_IN_TS7"],
+      "transition": "TS6_DEPRECATION_TO_TS7_REMOVAL",
+      "fixture": "fixtures/compiler-options/module-resolution-node10",
+      "rationale": "The legacy Node 10 resolver does not model modern package exports and is removed in TypeScript 7.",
+      "migration": "Use Bundler for bundler-owned resolution or NodeNext with a matching NodeNext module setting.",
+      "source": "https://devblogs.microsoft.com/typescript/announcing-typescript-7-0-beta/",
+      "reproduction": "npm run options -- --id module-resolution-node10",
+      "probe": {
+        "kind": "diagnostics",
+        "expected": {
+          "ts6": { "exitCode": 2, "diagnosticCodes": [5107], "emittedFiles": [] },
+          "ts7": { "exitCode": 1, "diagnosticCodes": [5108], "emittedFiles": [] }
+        }
+      }
+    },
+    {
+      "id": "base-url",
+      "option": "baseUrl",
+      "classifications": ["DEPRECATED_IN_TS6", "REMOVED_IN_TS7"],
+      "transition": "TS6_DEPRECATION_TO_TS7_REMOVAL",
+      "fixture": "fixtures/compiler-options/base-url",
+      "rationale": "TypeScript 7 removes baseUrl while retaining project-root-relative paths mappings.",
+      "migration": "Remove baseUrl and make each paths target relative to the tsconfig directory.",
+      "source": "https://devblogs.microsoft.com/typescript/announcing-typescript-7-0-beta/",
+      "reproduction": "npm run options -- --id base-url",
+      "probe": {
+        "kind": "diagnostics",
+        "expected": {
+          "ts6": { "exitCode": 2, "diagnosticCodes": [5101], "emittedFiles": [] },
+          "ts7": { "exitCode": 1, "diagnosticCodes": [5102], "emittedFiles": [] }
+        }
+      }
+    },
+    {
+      "id": "downlevel-iteration",
+      "option": "downlevelIteration",
+      "classifications": ["DEPRECATED_IN_TS6", "REMOVED_IN_TS7"],
+      "transition": "TS6_DEPRECATION_TO_TS7_REMOVAL",
+      "fixture": "fixtures/compiler-options/downlevel-iteration",
+      "rationale": "The option only affected ES5 emit, which TypeScript 7 no longer supports.",
+      "migration": "Remove the option and target ES2015 or newer; use a separate transpiler for older runtimes.",
+      "source": "https://devblogs.microsoft.com/typescript/announcing-typescript-7-0-beta/",
+      "reproduction": "npm run options -- --id downlevel-iteration",
+      "probe": {
+        "kind": "diagnostics",
+        "expected": {
+          "ts6": { "exitCode": 2, "diagnosticCodes": [5101], "emittedFiles": [] },
+          "ts7": { "exitCode": 1, "diagnosticCodes": [5102], "emittedFiles": [] }
+        }
+      }
+    },
+    {
+      "id": "es-module-interop-false",
+      "option": "esModuleInterop=false",
+      "classifications": ["DEPRECATED_IN_TS6", "REMOVED_IN_TS7"],
+      "transition": "TS6_DEPRECATION_TO_TS7_REMOVAL",
+      "fixture": "fixtures/compiler-options/es-module-interop-false",
+      "rationale": "TypeScript 7 assumes interoperability behavior and rejects disabling it.",
+      "migration": "Remove the false setting and update imports if the project depended on the legacy interop behavior.",
+      "source": "https://devblogs.microsoft.com/typescript/announcing-typescript-7-0-beta/",
+      "reproduction": "npm run options -- --id es-module-interop-false",
+      "probe": {
+        "kind": "diagnostics",
+        "expected": {
+          "ts6": { "exitCode": 2, "diagnosticCodes": [5107], "emittedFiles": [] },
+          "ts7": { "exitCode": 1, "diagnosticCodes": [5108], "emittedFiles": [] }
+        }
+      }
+    },
+    {
+      "id": "strict-default",
+      "option": "strict default",
+      "classifications": ["DEFAULT_CHANGED"],
+      "transition": "TS6_DEFAULT_ADOPTED_BY_TS7",
+      "fixture": "fixtures/compiler-options/strict-default",
+      "rationale": "Strict mode became the default in TypeScript 6 and TypeScript 7 adopts that default.",
+      "migration": "Fix strictness errors or set strict=false explicitly as a temporary migration step.",
+      "source": "https://devblogs.microsoft.com/typescript/announcing-typescript-6-0/",
+      "reproduction": "npm run options -- --id strict-default",
+      "probe": {
+        "kind": "diagnostics",
+        "expected": {
+          "ts6": { "exitCode": 2, "diagnosticCodes": [7006], "emittedFiles": [] },
+          "ts7": { "exitCode": 1, "diagnosticCodes": [7006], "emittedFiles": [] }
+        }
+      }
+    },
+    {
+      "id": "module-default",
+      "option": "module default",
+      "classifications": ["DEFAULT_CHANGED"],
+      "transition": "TS6_DEFAULT_ADOPTED_BY_TS7",
+      "fixture": "fixtures/compiler-options/module-default",
+      "rationale": "The default module kind became ESNext in TypeScript 6 and remains ESNext in TypeScript 7.",
+      "migration": "Set module explicitly when the runtime or bundler requires a different module format.",
+      "source": "https://devblogs.microsoft.com/typescript/announcing-typescript-6-0/",
+      "reproduction": "npm run options -- --id module-default",
+      "probe": {
+        "kind": "diagnostics",
+        "expected": {
+          "ts6": { "exitCode": 0, "diagnosticCodes": [], "emittedFiles": [] },
+          "ts7": { "exitCode": 0, "diagnosticCodes": [], "emittedFiles": [] }
+        }
+      }
+    },
+    {
+      "id": "target-default",
+      "option": "target default",
+      "classifications": ["DEFAULT_CHANGED"],
+      "transition": "TS6_DEFAULT_ADOPTED_BY_TS7",
+      "fixture": "fixtures/compiler-options/target-default",
+      "rationale": "The default target became the latest stable ECMAScript version in TypeScript 6 and is adopted by TypeScript 7.",
+      "migration": "Set target explicitly to make runtime requirements reproducible across future compiler releases.",
+      "source": "https://devblogs.microsoft.com/typescript/announcing-typescript-6-0/",
+      "reproduction": "npm run options -- --id target-default",
+      "probe": {
+        "kind": "diagnostics",
+        "expected": {
+          "ts6": { "exitCode": 0, "diagnosticCodes": [], "emittedFiles": [] },
+          "ts7": { "exitCode": 0, "diagnosticCodes": [], "emittedFiles": [] }
+        }
+      }
+    },
+    {
+      "id": "no-unchecked-side-effect-imports-default",
+      "option": "noUncheckedSideEffectImports default",
+      "classifications": ["DEFAULT_CHANGED"],
+      "transition": "TS6_DEFAULT_ADOPTED_BY_TS7",
+      "fixture": "fixtures/compiler-options/no-unchecked-side-effect-imports-default",
+      "rationale": "Unresolved side-effect imports are checked by default starting in TypeScript 6 and in TypeScript 7.",
+      "migration": "Fix the import path, add an ambient module declaration for assets, or explicitly disable the check while migrating.",
+      "source": "https://devblogs.microsoft.com/typescript/announcing-typescript-6-0/",
+      "reproduction": "npm run options -- --id no-unchecked-side-effect-imports-default",
+      "probe": {
+        "kind": "diagnostics",
+        "expected": {
+          "ts6": { "exitCode": 2, "diagnosticCodes": [2882], "emittedFiles": [] },
+          "ts7": { "exitCode": 1, "diagnosticCodes": [2882], "emittedFiles": [] }
+        }
+      }
+    },
+    {
+      "id": "root-dir-default",
+      "option": "rootDir default",
+      "classifications": ["DEFAULT_CHANGED"],
+      "transition": "TS6_DEFAULT_ADOPTED_BY_TS7",
+      "fixture": "fixtures/compiler-options/root-dir-default",
+      "rationale": "For config-based builds, rootDir now defaults to the tsconfig directory instead of the inferred common source directory.",
+      "migration": "Set rootDir=./src when the previous inferred source root determined the desired output layout.",
+      "source": "https://devblogs.microsoft.com/typescript/announcing-typescript-6-0/",
+      "reproduction": "npm run options -- --id root-dir-default",
+      "probe": {
+        "kind": "emit-files",
+        "expected": {
+          "ts6": { "exitCode": 2, "diagnosticCodes": [5011], "emittedFiles": ["src/index.js"] },
+          "ts7": { "exitCode": 2, "diagnosticCodes": [5011], "emittedFiles": ["src/index.js"] }
+        }
+      }
+    },
+    {
+      "id": "types-default",
+      "option": "types default",
+      "classifications": ["DEFAULT_CHANGED"],
+      "transition": "TS6_DEFAULT_ADOPTED_BY_TS7",
+      "fixture": "fixtures/compiler-options/types-default",
+      "rationale": "The implicit types list became empty in TypeScript 6 and TypeScript 7 adopts that behavior.",
+      "migration": "List required global packages explicitly, such as types=[\"node\", \"jest\"]; types=[\"*\"] restores broad discovery temporarily.",
+      "source": "https://devblogs.microsoft.com/typescript/announcing-typescript-6-0/",
+      "reproduction": "npm run options -- --id types-default",
+      "probe": {
+        "kind": "diagnostics",
+        "expected": {
+          "ts6": { "exitCode": 2, "diagnosticCodes": [2304], "emittedFiles": [] },
+          "ts7": { "exitCode": 1, "diagnosticCodes": [2304], "emittedFiles": [] }
+        }
+      }
+    }
+  ]
+}

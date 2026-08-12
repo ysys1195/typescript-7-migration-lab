@@ -8,6 +8,7 @@
     "fixtures:generate": "node scripts/generate-fixtures.mjs",
     "benchmark": "node scripts/benchmark.mjs",
     "compare": "node scripts/compare.mjs",
+    "options": "node scripts/compiler-options.mjs",
     "validate": "node scripts/validate-results.mjs",
     "runs": "node scripts/list-runs.mjs",
     "test": "node --test test/*.test.mjs",
@@ -17,6 +18,7 @@
     "test:resources": "node --test test/resource-measurement.test.mjs",
     "test:scaling": "node --test test/scaling-report.test.mjs",
     "test:diagnostics": "node --test test/diagnostics.test.mjs",
+    "test:options": "node --test test/compiler-options.test.mjs",
     "report": "node scripts/report.mjs",
     "lab": "node scripts/lab.mjs",
     "lab:quick": "LAB_RUNS=3 LAB_WARMUPS=1 node scripts/lab.mjs"
