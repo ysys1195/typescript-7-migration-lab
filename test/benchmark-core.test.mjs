@@ -105,6 +105,32 @@ test("execution plan rotates variant order and is deterministic", () => {
   }
 });
 
+test("execution plan contains only variants applicable to each fixture", () => {
+  const sparseVariants = [
+    { ...variants[0], applicableFixtures: ["first", "second"] },
+    { ...variants[1], applicableFixtures: ["first"] },
+    { ...variants[2], applicableFixtures: ["second"] }
+  ];
+  const plan = buildExecutionPlan({
+    fixtures,
+    variants: sparseVariants,
+    warmups: 0,
+    runs: 1
+  });
+  assert.deepEqual(
+    new Set(plan.filter((item) => item.fixture === "first").map(
+      (item) => item.variant
+    )),
+    new Set(["ts6", "ts7-single"])
+  );
+  assert.deepEqual(
+    new Set(plan.filter((item) => item.fixture === "second").map(
+      (item) => item.variant
+    )),
+    new Set(["ts6", "ts7-default"])
+  );
+});
+
 test("cold and warmup attempts are excluded and failures do not stop the plan", async () => {
   const oneFixture = [fixtures[0]];
   const twoVariants = variants.slice(0, 2);

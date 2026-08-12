@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/leaf-a" },
+    { "path": "./packages/leaf-b" },
+    { "path": "./packages/leaf-c" },
+    { "path": "./packages/leaf-d" }
+  ]
+}

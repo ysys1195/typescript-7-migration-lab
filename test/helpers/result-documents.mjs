@@ -172,6 +172,74 @@ export function createVersion2BenchmarkResult() {
   return result;
 }
 
+export function createScalingBenchmarkResult() {
+  const source = createBenchmarkResult({ schemaVersion: "3.1.0" });
+  const definitions = [
+    ...[1, 2, 4, 8].map((workers) => ({
+      fixture: "many-files",
+      variant: {
+        name: `ts7-checkers-${workers}`,
+        compiler: "ts7",
+        extraArgs: ["--checkers", String(workers)],
+        applicableFixtures: ["many-files"],
+        scaling: {
+          axis: "checkers",
+          requestedWorkers: workers,
+          baselineWorkers: 1
+        }
+      }
+    })),
+    ...[1, 2, 4].map((workers) => ({
+      fixture: "builder-scaling",
+      variant: {
+        name: `ts7-builders-${workers}`,
+        compiler: "ts7",
+        extraArgs: ["--builders", String(workers), "--checkers", "1"],
+        applicableFixtures: ["builder-scaling"],
+        scaling: {
+          axis: "builders",
+          requestedWorkers: workers,
+          baselineWorkers: 1,
+          fixedCheckers: 1
+        }
+      }
+    }))
+  ];
+  source.configuration.fixtures = [
+    { name: "many-files", args: ["-p", "fixtures/many-files"] },
+    {
+      name: "builder-scaling",
+      args: ["--build", "fixtures/builder-scaling", "--force"]
+    }
+  ];
+  source.configuration.variants = definitions.map(({ variant }) => variant);
+  source.configuration.executionPlan = [];
+  source.results = [];
+  let sequence = 0;
+  for (const { fixture, variant } of definitions) {
+    const result = structuredClone(createBenchmarkResult().results[0]);
+    result.fixture = fixture;
+    result.variant = variant.name;
+    for (const attempt of [
+      result.coldRun,
+      ...result.warmupAttempts,
+      ...result.measurementAttempts
+    ]) {
+      attempt.sequence = sequence;
+      source.configuration.executionPlan.push({
+        sequence,
+        phase: attempt.phase,
+        round: attempt.round,
+        fixture,
+        variant: variant.name
+      });
+      sequence += 1;
+    }
+    source.results.push(result);
+  }
+  return source;
+}
+
 export function createLegacyBenchmarkResult() {
   return {
     ...common({ schemaVersion: "1.0.0" }),

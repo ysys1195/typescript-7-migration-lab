@@ -5,6 +5,7 @@ import {
   reportsDir
 } from "./lib.mjs";
 import { resultStore } from "./result-store.mjs";
+import { formatScalingReport } from "./scaling-report.mjs";
 
 function readRunId(args) {
   const index = args.indexOf("--run-id");
@@ -53,6 +54,12 @@ for (const result of benchmark.results) {
 
 const rows = [];
 for (const [fixture, variants] of byFixture) {
+  const standardVariants = [
+    variants.ts6,
+    variants["ts7-single"],
+    variants["ts7-default"]
+  ].filter(Boolean);
+  if (standardVariants.length === 0) continue;
   const ts6 = variants.ts6 ? statisticsFor(variants.ts6).medianMs : null;
   const single = variants["ts7-single"]
     ? statisticsFor(variants["ts7-single"]).medianMs
@@ -62,11 +69,11 @@ for (const [fixture, variants] of byFixture) {
     : null;
   const completion = benchmark.schemaVersion === "1.0.0"
     ? `${benchmark.configuration.runs}/${benchmark.configuration.runs}`
-    : Object.values(variants).map((result) => {
+    : standardVariants.map((result) => {
       const statistics = statisticsFor(result);
       return `${result.variant}:${statistics.successfulSamples}/${statistics.plannedSamples}`;
     }).join(", ");
-  const outlierCount = Object.values(variants).reduce(
+  const outlierCount = standardVariants.reduce(
     (total, result) => total + statisticsFor(result).outliers.length,
     0
   );
@@ -138,6 +145,7 @@ const resourceReasons = [...new Set(benchmark.results.flatMap((result) => {
   ]).filter((metric) => metric?.status === "unavailable")
     .map((metric) => metric.reason);
 }))];
+const scalingReport = formatScalingReport(benchmark);
 
 const diagnosticRows = comparison.diagnostics.map((item) =>
   `| ${item.fixture} | ${item.status} | ${item.ts6.exitCode} | ${item.ts7.exitCode} |`
@@ -218,6 +226,10 @@ ${resourceReasons.length
     ? "All successful measured attempts include both resource metrics."
     : "Resource coverage is unavailable for this schema version."}
 
+## Checker and builder scaling
+
+${scalingReport}
+
 ## Diagnostics
 
 | Fixture | Result | TS6 exit | TS7 exit |
@@ -247,6 +259,8 @@ ${comparison.emit.ts6Output.length || comparison.emit.ts7Output.length
   clear operating-system filesystem caches.
 - CPU time is user plus system CPU time and may exceed wall-clock time when work
   runs in parallel. Peak RSS is normalized to bytes but its OS-specific scope may differ.
+- Scaling worker counts are requested concurrency. They do not prove that every worker
+  was active throughout the invocation.
 - A DIFFERENT result is a prompt to inspect \`${comparisonPath}\`; it is not
   automatically a regression.
 `;

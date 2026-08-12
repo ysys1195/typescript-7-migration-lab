@@ -37,6 +37,14 @@ if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 600_000) 
   );
 }
 
+const standardFixtureNames = [
+  "small",
+  "type-heavy",
+  "many-files",
+  "jsx",
+  "jsdoc",
+  "monorepo"
+];
 const fixtures = [
   { name: "small", args: ["-p", "fixtures/small", "--extendedDiagnostics"] },
   { name: "type-heavy", args: ["-p", "fixtures/type-heavy", "--extendedDiagnostics"] },
@@ -46,13 +54,65 @@ const fixtures = [
   {
     name: "monorepo",
     args: ["--build", "fixtures/monorepo", "--force", "--extendedDiagnostics"]
+  },
+  {
+    name: "builder-scaling",
+    args: [
+      "--build",
+      "fixtures/builder-scaling",
+      "--force",
+      "--extendedDiagnostics"
+    ]
   }
 ];
 
 const variants = [
-  { name: "ts6", compiler: compilers.ts6, extraArgs: [] },
-  { name: "ts7-single", compiler: compilers.ts7, extraArgs: ["--singleThreaded"] },
-  { name: "ts7-default", compiler: compilers.ts7, extraArgs: [] }
+  {
+    name: "ts6",
+    compiler: compilers.ts6,
+    extraArgs: [],
+    applicableFixtures: standardFixtureNames
+  },
+  {
+    name: "ts7-single",
+    compiler: compilers.ts7,
+    extraArgs: ["--singleThreaded"],
+    applicableFixtures: standardFixtureNames
+  },
+  {
+    name: "ts7-default",
+    compiler: compilers.ts7,
+    extraArgs: [],
+    applicableFixtures: standardFixtureNames
+  },
+  ...[1, 2, 4, 8].map((requestedWorkers) => ({
+    name: `ts7-checkers-${requestedWorkers}`,
+    compiler: compilers.ts7,
+    extraArgs: ["--checkers", String(requestedWorkers)],
+    applicableFixtures: ["many-files"],
+    scaling: {
+      axis: "checkers",
+      requestedWorkers,
+      baselineWorkers: 1
+    }
+  })),
+  ...[1, 2, 4].map((requestedWorkers) => ({
+    name: `ts7-builders-${requestedWorkers}`,
+    compiler: compilers.ts7,
+    extraArgs: [
+      "--builders",
+      String(requestedWorkers),
+      "--checkers",
+      "1"
+    ],
+    applicableFixtures: ["builder-scaling"],
+    scaling: {
+      axis: "builders",
+      requestedWorkers,
+      baselineWorkers: 1,
+      fixedCheckers: 1
+    }
+  }))
 ];
 
 const generatedFiles = await readdir(
@@ -93,11 +153,18 @@ try {
       orderStrategy: ORDER_STRATEGY,
       resourceMeasurement: resourceMeasurer.capability,
       fixtures: fixtures.map(({ name, args }) => ({ name, args })),
-      variants: variants.map(({ name, extraArgs }) => ({
-        name,
-        compiler: name === "ts6" ? "ts6" : "ts7",
-        extraArgs
-      })),
+    variants: variants.map(({
+      name,
+      extraArgs,
+      applicableFixtures,
+      scaling
+    }) => ({
+      name,
+      compiler: name === "ts6" ? "ts6" : "ts7",
+      extraArgs,
+      applicableFixtures,
+      ...(scaling ? { scaling } : {})
+    })),
       executionPlan,
       replay: {
         command: "npm run lab",

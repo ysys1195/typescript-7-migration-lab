@@ -1,6 +1,7 @@
 node_modules/
 fixtures/many-files/src/
 fixtures/monorepo/packages/*/dist/
+fixtures/builder-scaling/packages/*/dist/
 *.tsbuildinfo
 results/**
 reports/*.md

@@ -14,7 +14,8 @@ coldはOSのfilesystem cache、CPU状態、TypeScriptが利用する共有cache�
 
 ## Execution order
 
-`rotating-v1`は、各roundで3 variantの先頭を1つずつずらす。次はoffsetが0から
+`rotating-v1`は、各roundでそのfixtureへ適用可能なvariantの先頭を1つずつずらす。
+次は通常比較の3 variantでoffsetが0から
 始まる場合の基準例であり、実際の先頭はfixture位置とphaseによって変わる。
 
 ```text
@@ -69,3 +70,7 @@ fixtureとvariantの引数、compiler version、Git commit、hardware、実際�
 resultに含まれる。再実行は新しいrun IDを生成し、過去のrunを上書きしない。
 `LAB_FILE_COUNT`には環境変数の推測値ではなく、測定直前に
 `fixtures/many-files/src/`で確認したTypeScriptファイル数を保存する。
+
+scaling実験のworker数は、実際に常時稼働したworker数ではなくCLIへ指定した上限で
+ある。checkerとbuilderの適用対象・固定条件・集計方法は
+`docs/scaling-experiments.md`に記録する。

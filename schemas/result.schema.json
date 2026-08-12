@@ -12,7 +12,7 @@
     "configuration"
   ],
   "properties": {
-    "schemaVersion": { "enum": ["1.0.0", "2.0.0", "3.0.0"] },
+    "schemaVersion": { "enum": ["1.0.0", "2.0.0", "3.0.0", "3.1.0"] },
     "kind": { "enum": ["benchmark", "comparison"] },
     "runId": {
       "type": "string",
@@ -264,9 +264,40 @@
         "extraArgs": {
           "type": "array",
           "items": { "type": "string" }
-        }
+        },
+        "applicableFixtures": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "scaling": { "$ref": "#/$defs/scalingExperiment" }
       },
       "additionalProperties": false
+    },
+    "scalingExperiment": {
+      "type": "object",
+      "required": ["axis", "requestedWorkers", "baselineWorkers"],
+      "properties": {
+        "axis": { "enum": ["checkers", "builders"] },
+        "requestedWorkers": { "type": "integer", "minimum": 1 },
+        "baselineWorkers": { "const": 1 },
+        "fixedCheckers": { "const": 1 }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": { "axis": { "const": "builders" } },
+            "required": ["axis"]
+          },
+          "then": {
+            "required": ["fixedCheckers"],
+            "properties": { "fixedCheckers": { "const": 1 } }
+          },
+          "else": { "properties": { "fixedCheckers": false } }
+        }
+      ]
     },
     "benchmarkResultV1": {
       "type": "object",
