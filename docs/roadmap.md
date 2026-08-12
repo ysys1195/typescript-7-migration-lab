@@ -207,6 +207,11 @@ manifest検証を実装した。`errors-many`は大量diagnosticsの互換性分
 - バージョンと実行コマンドが記録されている
 - 対応状況が推測ではなく実行結果に基づいている
 
+Issue #11で、typescript-eslint 8.67.0、Vite 6.4.3、Vitest 4.1.10の固定versionを
+最小fixtureとlockfileで検証した。typescript-eslintはTS7単独のinstall／API probeが
+失敗しTS6 APIとの共存が必要、ViteとVitestの最小経路はTS7単独で利用可能と分類した。
+全command、exit code、stdout、stderrは`compatibility/ecosystem-results.json`へ記録する。
+
 ### Phase 6 — 履歴比較とregression検出
 
 目的は、TS7の更新や実装変更による推移を見ること。

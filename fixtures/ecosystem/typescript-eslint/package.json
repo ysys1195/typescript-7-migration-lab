@@ -1,0 +1,20 @@
+{
+  "name": "ts7-ecosystem-typescript-eslint",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint src/**/*.ts",
+    "typecheck:ts6": "tsc6 --project tsconfig.json",
+    "typecheck:ts7": "tsc --project tsconfig.json"
+  },
+  "devDependencies": {
+    "@typescript/native": "npm:typescript@7.0.2",
+    "eslint": "9.39.5",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "typescript-eslint": "8.67.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

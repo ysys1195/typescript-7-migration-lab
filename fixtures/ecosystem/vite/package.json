@@ -1,0 +1,17 @@
+{
+  "name": "ts7-ecosystem-vite",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc --project tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vite": "6.4.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
