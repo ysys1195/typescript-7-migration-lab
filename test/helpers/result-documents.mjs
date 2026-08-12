@@ -265,12 +265,16 @@ export function createLegacyBenchmarkResult() {
 
 export function createComparisonResult(overrides = {}) {
   return {
-    ...common({ schemaVersion: "4.0.0", ...overrides }),
+    ...common({ schemaVersion: "4.1.0", ...overrides }),
     kind: "comparison",
     configuration: {
       diagnosticFixtures: [{ name: "small" }],
       knownDiagnosticDifferences: {
         path: "compatibility/known-diagnostic-differences.json",
+        version: 1
+      },
+      compilerOptionCatalog: {
+        path: "compatibility/compiler-options.json",
         version: 1
       },
       emitFixture: "emit"
@@ -292,6 +296,51 @@ export function createComparisonResult(overrides = {}) {
         exitCode: 0,
         diagnostics: [],
         rawOutput: { stdout: "", stderr: "" }
+      }
+    }],
+    compilerOptions: [{
+      id: "target-es5",
+      option: "target=ES5",
+      classifications: ["DEPRECATED_IN_TS6", "REMOVED_IN_TS7"],
+      transition: "TS6_DEPRECATION_TO_TS7_REMOVAL",
+      fixture: "fixtures/compiler-options/target-es5",
+      rationale: "ES5 is below the supported target floor.",
+      migration: "Choose ES2015 or newer.",
+      source: "https://devblogs.microsoft.com/typescript/announcing-typescript-7-0-beta/",
+      reproduction: "npm run options -- --id target-es5",
+      probe: {
+        kind: "diagnostics",
+        expected: {
+          ts6: { exitCode: 2, diagnosticCodes: [5107], emittedFiles: [] },
+          ts7: { exitCode: 1, diagnosticCodes: [5108], emittedFiles: [] }
+        }
+      },
+      status: "MATCHED_EXPECTATION",
+      ts6: {
+        exitCode: 2,
+        diagnostics: [{
+          code: 5107,
+          category: "error",
+          file: "fixtures/compiler-options/target-es5/tsconfig.json",
+          line: 4,
+          column: 15,
+          message: "Deprecated target."
+        }],
+        rawOutput: { stdout: "TS6 output", stderr: "" },
+        emittedFiles: []
+      },
+      ts7: {
+        exitCode: 1,
+        diagnostics: [{
+          code: 5108,
+          category: "error",
+          file: "fixtures/compiler-options/target-es5/tsconfig.json",
+          line: 4,
+          column: 15,
+          message: "Removed target."
+        }],
+        rawOutput: { stdout: "TS7 output", stderr: "" },
+        emittedFiles: []
       }
     }],
     emit: {

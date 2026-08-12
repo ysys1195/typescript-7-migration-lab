@@ -21,9 +21,9 @@ test("scaling benchmark result follows schema version 3.1.0", () => {
   assert.equal(validateResultDocument(scaling), scaling);
 });
 
-test("current benchmark result follows schema version 4.0.0", () => {
+test("current benchmark result follows schema version 4.1.0", () => {
   const current = createScalingBenchmarkResult();
-  current.schemaVersion = "4.0.0";
+  current.schemaVersion = "4.1.0";
   assert.equal(validateResultDocument(current), current);
 });
 
@@ -302,8 +302,16 @@ test("version 3 benchmark rejects missing fixture results", () => {
   );
 });
 
-test("comparison result follows schema version 4.0.0", () => {
+test("comparison result follows schema version 4.1.0", () => {
   assert.equal(validateResultDocument(comparison), comparison);
+});
+
+test("schema version 4.0 comparison remains readable", () => {
+  const version4 = structuredClone(comparison);
+  version4.schemaVersion = "4.0.0";
+  delete version4.configuration.compilerOptionCatalog;
+  delete version4.compilerOptions;
+  assert.equal(validateResultDocument(version4), version4);
 });
 
 test("legacy comparison results remain readable", () => {
@@ -322,6 +330,7 @@ test("legacy comparison results remain readable", () => {
       ts7: { exitCode: 0, diagnostics: [] }
     }]
   };
+  delete legacy.compilerOptions;
   assert.equal(validateResultDocument(legacy), legacy);
 });
 
@@ -356,6 +365,22 @@ test("version 4 comparison rejects inconsistent structured differences", () => {
 test("version 4 comparison requires evidence for known differences", () => {
   const invalid = structuredClone(comparison);
   invalid.diagnostics[0].classification = "SUPPORTED_WITH_DIFFERENCE";
+  assert.throws(
+    () => validateResultDocument(invalid),
+    /semantic validation failed/
+  );
+});
+
+test("version 4.1 comparison detects unexpected compiler option output", () => {
+  const changed = structuredClone(comparison);
+  changed.compilerOptions[0].ts7.diagnostics[0].code = 9999;
+  changed.compilerOptions[0].status = "POSSIBLE_REGRESSION";
+  assert.equal(validateResultDocument(changed), changed);
+});
+
+test("version 4.1 comparison rejects false matched expectations", () => {
+  const invalid = structuredClone(comparison);
+  invalid.compilerOptions[0].ts7.diagnostics[0].code = 9999;
   assert.throws(
     () => validateResultDocument(invalid),
     /semantic validation failed/

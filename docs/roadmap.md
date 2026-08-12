@@ -414,6 +414,8 @@ Labels: `phase: compatibility`, `type: research`, `priority: high`
 - deprecated、removed、default changedを分類
 - compiler optionごとのfixtureを追加
 - 代替設定とmigration noteを記録
+- default changeはTS6で導入されTS7が採用した変更として、TS6／TS7差と区別
+- optionごとの期待diagnosticとemit pathを固定し、未知の結果をregression候補にする
 
 Depends on: Issue 6
 

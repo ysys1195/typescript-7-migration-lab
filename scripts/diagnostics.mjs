@@ -4,7 +4,8 @@ import { isDeepStrictEqual } from "node:util";
 
 const summaryPatterns = [
   /^Version \d/,
-  /^Found \d+ errors?\.?$/
+  /^Found \d+ errors?\.?$/,
+  /^TSFILE:/
 ];
 
 function normalizeFile(file, rootDirectory) {

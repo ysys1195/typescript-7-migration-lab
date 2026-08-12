@@ -15,6 +15,10 @@ import {
   manifestPath,
   readKnownDifferenceManifest
 } from "./diagnostics.mjs";
+import {
+  compilerOptionCatalogPath,
+  runCompilerOptionCatalog
+} from "./compiler-options.mjs";
 
 const diagnosticFixtures = [
   { name: "small" },
@@ -67,6 +71,11 @@ for (const fixtureConfig of diagnosticFixtures) {
   console.log(`${fixture.padEnd(16)} ${classification.classification}`);
 }
 
+const compilerOptionCatalog = await runCompilerOptionCatalog();
+for (const result of compilerOptionCatalog.results) {
+  console.log(`${result.id.padEnd(42)} ${result.status}`);
+}
+
 async function listFiles(directory, base = directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = [];
@@ -117,9 +126,14 @@ try {
         path: path.relative(root, knownDifferenceManifestPath),
         version: knownDifferenceManifest.version
       },
+      compilerOptionCatalog: {
+        path: path.relative(root, compilerOptionCatalogPath),
+        version: compilerOptionCatalog.version
+      },
       emitFixture: "emit"
     }),
     diagnostics: diagnosticResults,
+    compilerOptions: compilerOptionCatalog.results,
     emit: {
       status:
         ts6Emit.exitCode === 0 &&

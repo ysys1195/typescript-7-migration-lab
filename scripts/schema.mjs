@@ -223,10 +223,12 @@ function validateScalingConfiguration(configuration, fixtureNames) {
 
 function validateBenchmarkV2(value) {
   const { configuration } = value;
-  const resourceEnabled = ["3.0.0", "3.1.0", "4.0.0"].includes(
+  const resourceEnabled = ["3.0.0", "3.1.0", "4.0.0", "4.1.0"].includes(
     value.schemaVersion
   );
-  const scalingEnabled = ["3.1.0", "4.0.0"].includes(value.schemaVersion);
+  const scalingEnabled = ["3.1.0", "4.0.0", "4.1.0"].includes(
+    value.schemaVersion
+  );
   if (resourceEnabled && !configuration.resourceMeasurement) {
     semanticError("Schema 3 benchmark requires resourceMeasurement configuration.");
   }
@@ -488,13 +490,65 @@ function validateComparisonV4(value) {
   }
 }
 
+function compilerOptionOutcomeSummary(outcome) {
+  return {
+    exitCode: outcome.exitCode,
+    diagnosticCodes: outcome.diagnostics.map((diagnostic) => diagnostic.code)
+      .sort((left, right) => left - right),
+    emittedFiles: outcome.emittedFiles
+  };
+}
+
+function validateCompilerOptionsV41(value) {
+  if (!value.configuration.compilerOptionCatalog || !value.compilerOptions) {
+    semanticError("Schema 4.1 comparison requires the compiler option catalog.");
+  }
+  const ids = value.compilerOptions.map((result) => result.id);
+  if (ids.length === 0 || new Set(ids).size !== ids.length) {
+    semanticError("Compiler option catalog result IDs must be non-empty and unique.");
+  }
+  for (const result of value.compilerOptions) {
+    const ts6Matches = isDeepStrictEqual(
+      compilerOptionOutcomeSummary(result.ts6),
+      result.probe.expected.ts6
+    );
+    const ts7Matches = isDeepStrictEqual(
+      compilerOptionOutcomeSummary(result.ts7),
+      result.probe.expected.ts7
+    );
+    const expectedStatus = ts6Matches && ts7Matches
+      ? "MATCHED_EXPECTATION"
+      : "POSSIBLE_REGRESSION";
+    if (result.status !== expectedStatus) {
+      semanticError(`Compiler option ${result.id} status must be ${expectedStatus}.`);
+    }
+    const expectedClassifications = result.transition ===
+      "TS6_DEPRECATION_TO_TS7_REMOVAL"
+      ? ["DEPRECATED_IN_TS6", "REMOVED_IN_TS7"]
+      : ["DEFAULT_CHANGED"];
+    if (!isDeepStrictEqual(result.classifications, expectedClassifications)) {
+      semanticError(`Compiler option ${result.id} classifications are inconsistent.`);
+    }
+  }
+}
+
 export function validateResultDocument(value) {
   if (validate(value)) {
     if (value.kind === "benchmark" && value.schemaVersion !== "1.0.0") {
       validateBenchmarkV2(value);
     }
-    if (value.kind === "comparison" && value.schemaVersion === "4.0.0") {
+    if (value.kind === "comparison" && ["4.0.0", "4.1.0"].includes(
+      value.schemaVersion
+    )) {
       validateComparisonV4(value);
+    }
+    if (value.kind === "comparison" && value.schemaVersion === "4.0.0" && (
+      value.compilerOptions || value.configuration.compilerOptionCatalog
+    )) {
+      semanticError("Schema 4.0 comparison cannot contain compiler option results.");
+    }
+    if (value.kind === "comparison" && value.schemaVersion === "4.1.0") {
+      validateCompilerOptionsV41(value);
     }
     return value;
   }
