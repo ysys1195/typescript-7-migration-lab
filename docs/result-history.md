@@ -14,6 +14,13 @@ results/
 ├── latest.json
 ├── benchmark.json
 └── comparison.json
+
+reports/
+└── comparisons/
+    └── <baseline-run-id>--<target-run-id>/
+        ├── comparison.json
+        ├── comparison.md
+        └── comparison.csv
 ```
 
 `manifest.json`は、同じ`runId`のbenchmarkとcomparisonを関連付ける。
@@ -73,10 +80,20 @@ npm run runs
 npm run runs -- --complete-only
 ```
 
+任意の2つのcomplete runを比較する。`--target`を省略した場合はlatest runを使う。
+
+```bash
+npm run compare:runs -- --baseline <run-id>
+npm run compare:runs -- --baseline <run-id> --target <run-id> --threshold 5
+```
+
+比較方法、machine fingerprint、判定の意味は
+`docs/historical-comparisons.md`を参照する。
+
 ## Git policy
 
 測定結果にはマシン情報やGit metadataが含まれ、規模によっては大容量になるため、
 `results/`配下の生成物はGit管理しない。`results/.gitkeep`だけを追跡する。
 
-共有が必要な結果については、将来追加するsummary artifactまたはCI artifactを使い、
-ローカルの全履歴をそのままcommitしない。
+比較summaryを共有する場合は必要な生成物だけを明示的に扱い、ローカルの全履歴を
+そのままcommitしない。

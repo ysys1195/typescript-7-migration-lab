@@ -11,14 +11,20 @@ const schema = JSON.parse(
 const storageSchema = JSON.parse(
   readFileSync(path.join(root, "schemas", "run-storage.schema.json"), "utf8")
 );
+const runComparisonSchema = JSON.parse(
+  readFileSync(path.join(root, "schemas", "run-comparison.schema.json"), "utf8")
+);
 export const RESULT_SCHEMA_VERSION = schema.properties.schemaVersion.enum.at(-1);
 export const RESULT_STORAGE_VERSION =
   storageSchema.$defs.runManifest.properties.storageVersion.const;
+export const RUN_COMPARISON_SCHEMA_VERSION =
+  runComparisonSchema.properties.schemaVersion.const;
 
 const ajv = new Ajv2020({ allErrors: true, strict: true });
 ajv.addSchema(schema);
 const validate = ajv.getSchema(schema.$id);
 const validateStorage = ajv.compile(storageSchema);
+const validateRunComparison = ajv.compile(runComparisonSchema);
 
 function formatErrors(errors) {
   return errors
@@ -600,4 +606,128 @@ export function validateStorageDocument(value) {
 
   const details = formatErrors(validateStorage.errors);
   throw new Error(`Run storage schema validation failed:\n${details}`);
+}
+
+function validHistoricalMedian(observation) {
+  return observation && typeof observation.medianMs === "number" &&
+    Number.isFinite(observation.medianMs) && observation.medianMs >= 0;
+}
+
+function validateRunComparisonSemantics(value) {
+  const { comparability } = value;
+  if (comparability.machineMatch !== (
+    comparability.baselineMachineFingerprint ===
+    comparability.targetMachineFingerprint
+  )) {
+    semanticError("Machine fingerprint match status is inconsistent.");
+  }
+  const expectedPerformanceComparable = comparability.machineMatch &&
+    comparability.nodeVersionMatch &&
+    comparability.measurementConfigurationMatch &&
+    comparability.inputConfigurationMatch;
+  if (comparability.performanceComparable !== expectedPerformanceComparable) {
+    semanticError("Performance comparability flags are inconsistent.");
+  }
+  const expectedComparabilityStatus = comparability.warnings.length === 0
+    ? "COMPARABLE"
+    : "CAUTION";
+  if (comparability.status !== expectedComparabilityStatus) {
+    semanticError("Comparison warning status is inconsistent.");
+  }
+
+  const performanceKeys = new Set();
+  const counts = Object.fromEntries(
+    Object.keys(value.summary.performanceClassifications).map((key) => [key, 0])
+  );
+  for (const row of value.performance) {
+    const key = `${row.fixture}\0${row.variant}`;
+    if (performanceKeys.has(key)) {
+      semanticError(`Performance comparison ${row.fixture}/${row.variant} is duplicated.`);
+    }
+    performanceKeys.add(key);
+    const expectedComparable = comparability.machineMatch &&
+      comparability.nodeVersionMatch &&
+      comparability.measurementConfigurationMatch &&
+      row.inputsMatch &&
+      row.baseline?.status === "complete" &&
+      row.target?.status === "complete";
+    if (row.comparable !== expectedComparable) {
+      semanticError(`${row.fixture}/${row.variant} comparability is inconsistent.`);
+    }
+    let expectedClassification;
+    let expectedDeltaMs = null;
+    let expectedDeltaPercent = null;
+    if (!row.baseline) {
+      expectedClassification = "ADDED";
+    } else if (!row.target) {
+      expectedClassification = "REMOVED";
+    } else if (
+      !validHistoricalMedian(row.baseline) ||
+      !validHistoricalMedian(row.target) ||
+      row.baseline.medianMs === 0
+    ) {
+      expectedClassification = "UNAVAILABLE";
+    } else {
+      expectedDeltaMs = row.target.medianMs - row.baseline.medianMs;
+      expectedDeltaPercent = expectedDeltaMs / row.baseline.medianMs * 100;
+      expectedClassification = !row.comparable
+        ? "NOT_COMPARABLE"
+        : expectedDeltaPercent > value.thresholdPercent
+          ? "REGRESSION"
+          : expectedDeltaPercent < -value.thresholdPercent
+            ? "IMPROVEMENT"
+            : "STABLE";
+    }
+    if (
+      row.classification !== expectedClassification ||
+      row.deltaMs !== expectedDeltaMs ||
+      row.deltaPercent !== expectedDeltaPercent
+    ) {
+      semanticError(`${row.fixture}/${row.variant} classification is inconsistent.`);
+    }
+    counts[row.classification] += 1;
+  }
+  if (
+    value.summary.performanceRows !== value.performance.length ||
+    !isDeepStrictEqual(value.summary.performanceClassifications, counts)
+  ) {
+    semanticError("Performance comparison summary is inconsistent.");
+  }
+
+  const compatibilityKeys = new Set();
+  let compatibilityChanges = 0;
+  for (const row of value.compatibility) {
+    const key = `${row.area}\0${row.key}`;
+    if (compatibilityKeys.has(key)) {
+      semanticError(`Compatibility comparison ${row.area}/${row.key} is duplicated.`);
+    }
+    compatibilityKeys.add(key);
+    const expectedChange = !row.baseline
+      ? "ADDED"
+      : !row.target
+        ? "REMOVED"
+        : row.baseline.fingerprint === row.target.fingerprint
+          ? "UNCHANGED"
+          : "CHANGED";
+    if (row.change !== expectedChange) {
+      semanticError(`Compatibility comparison ${row.area}/${row.key} is inconsistent.`);
+    }
+    if (row.change !== "UNCHANGED") compatibilityChanges += 1;
+  }
+  if (
+    value.summary.compatibilityRows !== value.compatibility.length ||
+    value.summary.compatibilityChanges !== compatibilityChanges
+  ) {
+    semanticError("Compatibility comparison summary is inconsistent.");
+  }
+}
+
+export function validateRunComparisonDocument(value) {
+  if (validateRunComparison(value)) {
+    validateRunComparisonSemantics(value);
+    return value;
+  }
+
+  const details = formatErrors(validateRunComparison.errors);
+  throw new Error(`Run comparison schema validation failed:\n${details}`);
 }
