@@ -10,6 +10,7 @@ TypeScript 6（JavaScript実装）とTypeScript 7（Goによるネイティブ�
 - [測定結果のschema](docs/result-schema.md)
 - [測定履歴の保存方式](docs/result-history.md)
 - [過去runの比較](docs/historical-comparisons.md)
+- [read-only local dashboard](docs/dashboard.md)
 - [ベンチマーク手法](docs/benchmark-methodology.md)
 - [CPU・メモリ測定方式](docs/resource-measurement.md)
 - [checker・builder scaling実験](docs/scaling-experiments.md)
@@ -60,8 +61,19 @@ npm run test:benchmark
 npm run test:diagnostics
 npm run test:options
 npm run test:history
+npm run test:dashboard
 npm run runs
 ```
+
+保存済みの最新runと履歴をローカルdashboardで閲覧できます。benchmarkや任意コマンドを
+実行する機能はありません。
+
+```bash
+npm run dev
+```
+
+ブラウザで`http://127.0.0.1:4173`を開きます。画面とread-only APIの詳細は
+[dashboard documentation](docs/dashboard.md)を参照してください。
 
 履歴の正本は`results/runs/`です。直下の互換ミラーは最後に正常完了したrunを示す
 移行期間中の既存ツール向けで、reportや将来のUIは`latest.json`または明示した

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>TypeScript 7 Migration Lab</title>
+    <meta name="description" content="Read-only local dashboard for TypeScript 6 and TypeScript 7 migration experiments.">
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <div class="brand-block">
+          <span class="eyebrow">Migration laboratory</span>
+          <span class="brand-mark" aria-hidden="true">TS</span>
+          <h1>TypeScript<br>7 Lab</h1>
+          <p>Measured evidence for a native compiler migration.</p>
+        </div>
+        <nav class="nav-list">
+          <button class="nav-item is-active" data-view="overview" type="button">Overview</button>
+          <button class="nav-item" data-view="performance" type="button">Performance</button>
+          <button class="nav-item" data-view="compatibility" type="button">Compatibility</button>
+          <button class="nav-item" data-view="diagnostics" type="button">Diagnostics Diff</button>
+          <button class="nav-item" data-view="emit" type="button">Emit Diff</button>
+          <button class="nav-item" data-view="history" type="button">Run History</button>
+          <button class="nav-item" data-view="environment" type="button">Environment</button>
+        </nav>
+        <div class="read-only-note">
+          <span class="status-dot" aria-hidden="true"></span>
+          Read-only local data
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <div>
+            <span class="eyebrow" id="view-kicker">Latest evidence</span>
+            <h2 id="view-title">Overview</h2>
+          </div>
+          <div class="run-control">
+            <label for="run-select">Displayed run</label>
+            <select id="run-select" aria-describedby="run-detail"></select>
+            <span id="run-detail">Loading run history…</span>
+          </div>
+        </header>
+
+        <div id="error-banner" class="error-banner" role="alert" hidden></div>
+        <main id="main-content" tabindex="-1">
+          <section class="view is-active" id="view-overview" data-view-panel="overview">
+            <div class="hero-grid">
+              <div>
+                <span class="section-index">01 / evidence summary</span>
+                <h3>See where the native compiler changes the work.</h3>
+                <p id="overview-lead">Loading the latest validated run.</p>
+              </div>
+              <div class="run-stamp" id="overview-stamp"></div>
+            </div>
+            <div class="metric-grid" id="overview-metrics"></div>
+            <div class="two-column">
+              <article class="panel">
+                <div class="panel-heading">
+                  <div>
+                    <span class="section-index">Median wall time</span>
+                    <h3>Representative fixtures</h3>
+                  </div>
+                </div>
+                <div id="overview-performance"></div>
+              </article>
+              <article class="panel">
+                <div class="panel-heading">
+                  <div>
+                    <span class="section-index">Compatibility signal</span>
+                    <h3>What needs attention</h3>
+                  </div>
+                </div>
+                <div id="overview-compatibility"></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="view" id="view-performance" data-view-panel="performance" hidden>
+            <div class="section-heading">
+              <span class="section-index">02 / wall-clock comparison</span>
+              <h3>TS6, native single-threaded, and native parallel</h3>
+              <p>Bars use each fixture’s slowest standard variant as 100%. Scaling experiments remain in the detail table.</p>
+            </div>
+            <div id="performance-chart" class="chart-list"></div>
+            <article class="panel table-panel">
+              <div class="panel-heading"><h3>All measured fixture / variant pairs</h3></div>
+              <div class="table-scroll"><table id="performance-table"></table></div>
+            </article>
+          </section>
+
+          <section class="view" id="view-compatibility" data-view-panel="compatibility" hidden>
+            <div class="section-heading">
+              <span class="section-index">03 / migration surface</span>
+              <h3>Compatibility is evidence, not a binary label.</h3>
+              <p>Known differences stay separate from observations that may require regression investigation.</p>
+            </div>
+            <div class="metric-grid compact" id="compatibility-metrics"></div>
+            <div class="two-column">
+              <article class="panel">
+                <div class="panel-heading"><h3>Diagnostic fixtures</h3></div>
+                <div id="compatibility-diagnostics"></div>
+              </article>
+              <article class="panel table-panel">
+                <div class="panel-heading"><h3>Compiler option migration</h3></div>
+                <div class="table-scroll"><table id="options-table"></table></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="view" id="view-diagnostics" data-view-panel="diagnostics" hidden>
+            <div class="section-heading">
+              <span class="section-index">04 / structured evidence</span>
+              <h3>Diagnostics and exit codes, compared independently.</h3>
+            </div>
+            <div id="diagnostics-list" class="detail-list"></div>
+          </section>
+
+          <section class="view" id="view-emit" data-view-panel="emit" hidden>
+            <div class="section-heading">
+              <span class="section-index">05 / generated artifacts</span>
+              <h3>JavaScript and declaration output.</h3>
+            </div>
+            <div id="emit-content"></div>
+          </section>
+
+          <section class="view" id="view-history" data-view-panel="history" hidden>
+            <div class="section-heading history-heading">
+              <div>
+                <span class="section-index">06 / change over time</span>
+                <h3>Compare a baseline without hiding environment differences.</h3>
+              </div>
+              <form id="history-form" class="history-form">
+                <label for="baseline-select">Baseline</label>
+                <select id="baseline-select"></select>
+                <label for="threshold-input">Threshold %</label>
+                <input id="threshold-input" name="threshold" type="number" min="0" max="1000" step="0.1" value="10">
+                <button type="submit">Compare to displayed run</button>
+              </form>
+            </div>
+            <div id="history-comparison"></div>
+            <article class="panel table-panel">
+              <div class="panel-heading"><h3>Complete runs</h3></div>
+              <div class="table-scroll"><table id="history-table"></table></div>
+            </article>
+          </section>
+
+          <section class="view" id="view-environment" data-view-panel="environment" hidden>
+            <div class="section-heading">
+              <span class="section-index">07 / reproducibility record</span>
+              <h3>The conditions behind every number.</h3>
+            </div>
+            <div class="environment-grid" id="environment-grid"></div>
+            <article class="panel">
+              <div class="panel-heading"><h3>Recorded benchmark configuration</h3></div>
+              <pre id="configuration-json"></pre>
+            </article>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
