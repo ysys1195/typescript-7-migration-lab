@@ -1,0 +1,237 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "ecosystem-compatibility",
+  "recordedAt": "2026-08-12T16:28:15.902Z",
+  "environment": {
+    "nodeVersion": "v24.14.0",
+    "npmVersion": "11.9.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "normalization": [
+    "repository path replaced with <repo>",
+    "home directory replaced with <home>",
+    "path separators and line endings normalized to forward slash and LF"
+  ],
+  "tools": [
+    {
+      "name": "typescript-eslint",
+      "version": "8.67.0",
+      "classification": "TS6_COEXISTENCE_REQUIRED",
+      "blocker": "PROGRAMMATIC_API_WAITING",
+      "migrationNote": "Keep the stable TS6 package at the bare typescript import and install the TS7 compiler under a separate alias. ESLint uses the TS6 programmatic API while type checking can run through either tsc6 or the TS7 tsc binary.",
+      "scenarios": [
+        {
+          "id": "typescript-eslint-ts7-only",
+          "fixture": "fixtures/ecosystem/typescript-eslint-ts7-only",
+          "commands": [
+            {
+              "id": "install-with-supported-peer-rules",
+              "command": "npm ci --ignore-scripts --no-audit --no-fund",
+              "expected": "failure",
+              "outcome": "failure",
+              "expectationMet": true,
+              "exitCode": 1,
+              "signal": null,
+              "error": null,
+              "stdout": "",
+              "stderr": "npm error code ERESOLVE\nnpm error ERESOLVE could not resolve\nnpm error\nnpm error While resolving: typescript-eslint@8.67.0\nnpm error Found: typescript@7.0.2\nnpm error node_modules/typescript\nnpm error   dev typescript@\"7.0.2\" from the root project\nnpm error   peer typescript@\">=4.8.4\" from ts-api-utils@2.5.0\nnpm error   node_modules/ts-api-utils\nnpm error     ts-api-utils@\"^2.5.0\" from @typescript-eslint/eslint-plugin@8.67.0\nnpm error     node_modules/typescript-eslint/node_modules/@typescript-eslint/eslint-plugin\nnpm error       @typescript-eslint/eslint-plugin@\"8.67.0\" from typescript-eslint@8.67.0\nnpm error       node_modules/typescript-eslint\nnpm error         dev typescript-eslint@\"8.67.0\" from the root project\nnpm error     ts-api-utils@\"^2.5.0\" from @typescript-eslint/type-utils@8.67.0\nnpm error     node_modules/typescript-eslint/node_modules/@typescript-eslint/eslint-plugin/node_modules/@typescript-eslint/type-utils\nnpm error       @typescript-eslint/type-utils@\"8.67.0\" from @typescript-eslint/eslint-plugin@8.67.0\nnpm error       node_modules/typescript-eslint/node_modules/@typescript-eslint/eslint-plugin\nnpm error         @typescript-eslint/eslint-plugin@\"8.67.0\" from typescript-eslint@8.67.0\nnpm error         node_modules/typescript-eslint\nnpm error     1 more (@typescript-eslint/typescript-estree)\nnpm error\nnpm error Could not resolve dependency:\nnpm error peer typescript@\">=4.8.4 <6.1.0\" from typescript-eslint@8.67.0\nnpm error node_modules/typescript-eslint\nnpm error   dev typescript-eslint@\"8.67.0\" from the root project\nnpm error\nnpm error Conflicting peer dependency: typescript@6.0.3\nnpm error node_modules/typescript\nnpm error   peer typescript@\">=4.8.4 <6.1.0\" from typescript-eslint@8.67.0\nnpm error   node_modules/typescript-eslint\nnpm error     dev typescript-eslint@\"8.67.0\" from the root project\nnpm error\nnpm error Fix the upstream dependency conflict, or retry\nnpm error this command with --force or --legacy-peer-deps\nnpm error to accept an incorrect (and potentially broken) dependency resolution.\nnpm error\nnpm error\nnpm error For a full report see:\nnpm error <home>/.npm/_logs/2026-08-12T16_28_16_045Z-eresolve-report.txt\nnpm error A complete log of this run can be found in: <home>/.npm/_logs/2026-08-12T16_28_16_045Z-debug-0.log"
+            },
+            {
+              "id": "force-install-for-api-probe",
+              "command": "npm ci --ignore-scripts --no-audit --no-fund --force",
+              "expected": "success",
+              "outcome": "success",
+              "expectationMet": true,
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "stdout": "\nadded 109 packages in 1s",
+              "stderr": "npm warn using --force Recommended protections disabled.\nnpm warn ERESOLVE overriding peer dependency\nnpm warn While resolving: typescript-eslint@8.67.0\nnpm warn Found: typescript@7.0.2\nnpm warn node_modules/typescript\nnpm warn   dev typescript@\"7.0.2\" from the root project\nnpm warn   1 more (ts-api-utils)\nnpm warn\nnpm warn Could not resolve dependency:\nnpm warn peer typescript@\">=4.8.4 <6.1.0\" from typescript-eslint@8.67.0\nnpm warn node_modules/typescript-eslint\nnpm warn   dev typescript-eslint@\"8.67.0\" from the root project\nnpm warn\nnpm warn Conflicting peer dependency: typescript@6.0.3\nnpm warn node_modules/typescript\nnpm warn   peer typescript@\">=4.8.4 <6.1.0\" from typescript-eslint@8.67.0\nnpm warn   node_modules/typescript-eslint\nnpm warn     dev typescript-eslint@\"8.67.0\" from the root project\nnpm warn ERESOLVE overriding peer dependency\nnpm warn While resolving: @typescript-eslint/eslint-plugin@8.67.0\nnpm warn Found: typescript@7.0.2\nnpm warn node_modules/typescript\nnpm warn   dev typescript@\"7.0.2\" from the root project\nnpm warn   1 more (ts-api-utils)\nnpm warn\nnpm warn Could not resolve dependency:\nnpm warn peer typescript@\">=4.8.4 <6.1.0\" from @typescript-eslint/eslint-plugin@8.67.0\nnpm warn node_modules/typescript-eslint/node_modules/@typescript-eslint/eslint-plugin\nnpm warn   @typescript-eslint/eslint-plugin@\"8.67.0\" from typescript-eslint@8.67.0\nnpm warn   node_modules/typescript-eslint\nnpm warn\nnpm warn Conflicting peer dependency: typescript@6.0.3\nnpm warn node_modules/typescript\nnpm warn   peer typescript@\">=4.8.4 <6.1.0\" from @typescript-eslint/eslint-plugin@8.67.0\nnpm warn   node_modules/typescript-eslint/node_modules/@typescript-eslint/eslint-plugin\nnpm warn     @typescript-eslint/eslint-plugin@\"8.67.0\" from typescript-eslint@8.67.0\nnpm warn     node_modules/typescript-eslint\nnpm warn ERESOLVE overriding peer dependency\nnpm warn While resolving: @typescript-eslint/parser@8.67.0\nnpm warn Found: typescript@7.0.2\nnpm warn node_modules/typescript\nnpm warn   dev typescript@\"7.0.2\" from the root project\nnpm warn   1 more (ts-api-utils)\nnpm warn\nnpm warn Could not resolve dependency:\nnpm warn peer typescript@\">=4.8.4 <6.1.0\" from @typescript-eslint/parser@8.67.0\nnpm warn node_modules/typescript-eslint/node_modules/@typescript-eslint/parser\nnpm warn   @typescript-eslint/parser@\"8.67.0\" from typescript-eslint@8.67.0\nnpm warn   node_modules/typescript-eslint\nnpm warn   1 more (@typescript-eslint/eslint-plugin)\nnpm warn\nnpm warn Conflicting peer dependency: typescript@6.0.3\nnpm warn node_modules/typescript\nnpm warn   peer typescript@\">=4.8.4 <6.1.0\" from @typescript-eslint/parser@8.67.0\nnpm warn   node_modules/typescript-eslint/node_modules/@typescript-eslint/parser\nnpm warn     @typescript-eslint/parser@\"8.67.0\" from typescript-eslint@8.67.0\nnpm warn     node_modules/typescript-eslint\nnpm warn     1 more (@typescript-eslint/eslint-plugin)\nnpm warn ERESOLVE overriding peer dependency\nnpm warn While resolving: @typescript-eslint/typescript-estree@8.67.0\nnpm warn Found: typescript@7.0.2\nnpm warn node_modules/typescript\nnpm warn   dev typescript@\"7.0.2\" from the root project\nnpm warn   1 more (ts-api-utils)\nnpm warn\nnpm warn Could not resolve dependency:\nnpm warn peer typescript@\">=4.8.4 <6.1.0\" from @typescript-eslint/typescript-estree@8.67.0\nnpm warn node_modules/typescript-eslint/node_modules/@typescript-eslint/typescript-estree\nnpm warn   @typescript-eslint/typescript-estree@\"8.67.0\" from typescript-eslint@8.67.0\nnpm warn   node_modules/typescript-eslint\nnpm warn   3 more (@typescript-eslint/type-utils, ...)\nnpm warn\nnpm warn Conflicting peer dependency: typescript@6.0.3\nnpm warn node_modules/typescript\nnpm warn   peer typescript@\">=4.8.4 <6.1.0\" from @typescript-eslint/typescript-estree@8.67.0\nnpm warn   node_modules/typescript-eslint/node_modules/@typescript-eslint/typescript-estree\nnpm warn     @typescript-eslint/typescript-estree@\"8.67.0\" from typescript-eslint@8.67.0\nnpm warn     node_modules/typescript-eslint\nnpm warn     3 more (@typescript-eslint/type-utils, ...)\nnpm warn ERESOLVE overriding peer dependency\nnpm warn While resolving: @typescript-eslint/utils@8.67.0\nnpm warn Found: typescript@7.0.2\nnpm warn node_modules/typescript\nnpm warn   dev typescript@\"7.0.2\" from the root project\nnpm warn   1 more (ts-api-utils)\nnpm warn\nnpm warn Could not resolve dependency:\nnpm warn peer typescript@\">=4.8.4 <6.1.0\" from @typescript-eslint/utils@8.67.0\nnpm warn node_modules/typescript-eslint/node_modules/@typescript-eslint/utils\nnpm warn   @typescript-eslint/utils@\"8.67.0\" from typescript-eslint@8.67.0\nnpm warn   node_modules/typescript-eslint\nnpm warn   2 more (@typescript-eslint/eslint-plugin, @typescript-eslint/type-utils)\nnpm warn\nnpm warn Conflicting peer dependency: typescript@6.0.3\nnpm warn node_modules/typescript\nnpm warn   peer typescript@\">=4.8.4 <6.1.0\" from @typescript-eslint/utils@8.67.0\nnpm warn   node_modules/typescript-eslint/node_modules/@typescript-eslint/utils\nnpm warn     @typescript-eslint/utils@\"8.67.0\" from typescript-eslint@8.67.0\nnpm warn     node_modules/typescript-eslint\nnpm warn     2 more (@typescript-eslint/eslint-plugin, @typescript-eslint/type-utils)\nnpm warn ERESOLVE overriding peer dependency\nnpm warn While resolving: @typescript-eslint/type-utils@8.67.0\nnpm warn Found: typescript@7.0.2\nnpm warn node_modules/typescript\nnpm warn   dev typescript@\"7.0.2\" from the root project\nnpm warn   1 more (ts-api-utils)\nnpm warn\nnpm warn Could not resolve dependency:\nnpm warn peer typescript@\">=4.8.4 <6.1.0\" from @typescript-eslint/type-utils@8.67.0\nnpm warn node_modules/typescript-eslint/node_modules/@typescript-eslint/eslint-plugin/node_modules/@typescript-eslint/type-utils\nnpm warn   @typescript-eslint/type-utils@\"8.67.0\" from @typescript-eslint/eslint-plugin@8.67.0\nnpm warn   node_modules/typescript-eslint/node_modules/@typescript-eslint/eslint-plugin\nnpm warn\nnpm warn Conflicting peer dependency: typescript@6.0.3\nnpm warn node_modules/typescript\nnpm warn   peer typescript@\">=4.8.4 <6.1.0\" from @typescript-eslint/type-utils@8.67.0\nnpm warn   node_modules/typescript-eslint/node_modules/@typescript-eslint/eslint-plugin/node_modules/@typescript-eslint/type-utils\nnpm warn     @typescript-eslint/type-utils@\"8.67.0\" from @typescript-eslint/eslint-plugin@8.67.0\nnpm warn     node_modules/typescript-eslint/node_modules/@typescript-eslint/eslint-plugin\nnpm warn ERESOLVE overriding peer dependency\nnpm warn While resolving: @typescript-eslint/project-service@8.67.0\nnpm warn Found: typescript@7.0.2\nnpm warn node_modules/typescript\nnpm warn   dev typescript@\"7.0.2\" from the root project\nnpm warn   1 more (ts-api-utils)\nnpm warn\nnpm warn Could not resolve dependency:\nnpm warn peer typescript@\">=4.8.4 <6.1.0\" from @typescript-eslint/project-service@8.67.0\nnpm warn node_modules/typescript-eslint/node_modules/@typescript-eslint/typescript-estree/node_modules/@typescript-eslint/project-service\nnpm warn   @typescript-eslint/project-service@\"8.67.0\" from @typescript-eslint/typescript-estree@8.67.0\nnpm warn   node_modules/typescript-eslint/node_modules/@typescript-eslint/typescript-estree\nnpm warn\nnpm warn Conflicting peer dependency: typescript@6.0.3\nnpm warn node_modules/typescript\nnpm warn   peer typescript@\">=4.8.4 <6.1.0\" from @typescript-eslint/project-service@8.67.0\nnpm warn   node_modules/typescript-eslint/node_modules/@typescript-eslint/typescript-estree/node_modules/@typescript-eslint/project-service\nnpm warn     @typescript-eslint/project-service@\"8.67.0\" from @typescript-eslint/typescript-estree@8.67.0\nnpm warn     node_modules/typescript-eslint/node_modules/@typescript-eslint/typescript-estree\nnpm warn ERESOLVE overriding peer dependency\nnpm warn While resolving: @typescript-eslint/tsconfig-utils@8.67.0\nnpm warn Found: typescript@7.0.2\nnpm warn node_modules/typescript\nnpm warn   dev typescript@\"7.0.2\" from the root project\nnpm warn   1 more (ts-api-utils)\nnpm warn\nnpm warn Could not resolve dependency:\nnpm warn peer typescript@\">=4.8.4 <6.1.0\" from @typescript-eslint/tsconfig-utils@8.67.0\nnpm warn node_modules/typescript-eslint/node_modules/@typescript-eslint/typescript-estree/node_modules/@typescript-eslint/tsconfig-utils\nnpm warn   @typescript-eslint/tsconfig-utils@\"8.67.0\" from @typescript-eslint/typescript-estree@8.67.0\nnpm warn   node_modules/typescript-eslint/node_modules/@typescript-eslint/typescript-estree\nnpm warn   1 more (@typescript-eslint/project-service)\nnpm warn\nnpm warn Conflicting peer dependency: typescript@6.0.3\nnpm warn node_modules/typescript\nnpm warn   peer typescript@\">=4.8.4 <6.1.0\" from @typescript-eslint/tsconfig-utils@8.67.0\nnpm warn   node_modules/typescript-eslint/node_modules/@typescript-eslint/typescript-estree/node_modules/@typescript-eslint/tsconfig-utils\nnpm warn     @typescript-eslint/tsconfig-utils@\"8.67.0\" from @typescript-eslint/typescript-estree@8.67.0\nnpm warn     node_modules/typescript-eslint/node_modules/@typescript-eslint/typescript-estree\nnpm warn     1 more (@typescript-eslint/project-service)"
+            },
+            {
+              "id": "ts7-cli-typecheck",
+              "command": "npm run typecheck",
+              "expected": "success",
+              "outcome": "success",
+              "expectationMet": true,
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "stdout": "\n> ts7-ecosystem-typescript-eslint-ts7-only@0.0.0 typecheck\n> tsc --project tsconfig.json",
+              "stderr": ""
+            },
+            {
+              "id": "typescript-eslint-api-probe",
+              "command": "npm run lint",
+              "expected": "failure",
+              "outcome": "failure",
+              "expectationMet": true,
+              "exitCode": 2,
+              "signal": null,
+              "error": null,
+              "stdout": "\n> ts7-ecosystem-typescript-eslint-ts7-only@0.0.0 lint\n> eslint src/**/*.ts",
+              "stderr": "typescript-eslint does not support TS 7.0.\nPlease see https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6.0 to run typescript-eslint using the TS 6 API.\nSee also https://github.com/typescript-eslint/typescript-eslint/issues/10940 for tracking typescript-eslint's support for TS >=7.1\n\nOops! Something went wrong! :(\n\nESLint: 9.39.5\n\nError: typescript-eslint does not support TS 7.0.\n    at Object.<anonymous> (<repo>/fixtures/ecosystem/typescript-eslint-ts7-only/node_modules/typescript-eslint/dist/index.js:52:11)\n    at Module._compile (node:internal/modules/cjs/loader:1812:14)\n    at Object..js (node:internal/modules/cjs/loader:1943:10)\n    at Module.load (node:internal/modules/cjs/loader:1533:32)\n    at Module._load (node:internal/modules/cjs/loader:1335:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at loadCJSModuleWithModuleLoad (node:internal/modules/esm/translators:328:3)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:233:7)\n    at ModuleJob.run (node:internal/modules/esm/module_job:430:25)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:661:26)"
+            }
+          ]
+        },
+        {
+          "id": "typescript-eslint-ts6-coexistence",
+          "fixture": "fixtures/ecosystem/typescript-eslint",
+          "commands": [
+            {
+              "id": "install",
+              "command": "npm ci --ignore-scripts --no-audit --no-fund",
+              "expected": "success",
+              "outcome": "success",
+              "expectationMet": true,
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "stdout": "\nadded 111 packages in 1s",
+              "stderr": ""
+            },
+            {
+              "id": "lint-with-ts6-api",
+              "command": "npm run lint",
+              "expected": "success",
+              "outcome": "success",
+              "expectationMet": true,
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "stdout": "\n> ts7-ecosystem-typescript-eslint@0.0.0 lint\n> eslint src/**/*.ts",
+              "stderr": ""
+            },
+            {
+              "id": "ts6-cli-typecheck",
+              "command": "npm run typecheck:ts6",
+              "expected": "success",
+              "outcome": "success",
+              "expectationMet": true,
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "stdout": "\n> ts7-ecosystem-typescript-eslint@0.0.0 typecheck:ts6\n> tsc6 --project tsconfig.json",
+              "stderr": ""
+            },
+            {
+              "id": "ts7-cli-typecheck",
+              "command": "npm run typecheck:ts7",
+              "expected": "success",
+              "outcome": "success",
+              "expectationMet": true,
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "stdout": "\n> ts7-ecosystem-typescript-eslint@0.0.0 typecheck:ts7\n> tsc --project tsconfig.json",
+              "stderr": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Vite",
+      "version": "6.4.3",
+      "classification": "TS7_STANDALONE",
+      "blocker": null,
+      "migrationNote": "Vite transpiles TypeScript with esbuild and does not consume the TypeScript programmatic API. Run the TS7 tsc command separately for type checking.",
+      "scenarios": [
+        {
+          "id": "vite-ts7-only",
+          "fixture": "fixtures/ecosystem/vite",
+          "commands": [
+            {
+              "id": "install",
+              "command": "npm ci --ignore-scripts --no-audit --no-fund",
+              "expected": "success",
+              "outcome": "success",
+              "expectationMet": true,
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "stdout": "\nadded 16 packages in 490ms",
+              "stderr": ""
+            },
+            {
+              "id": "ts7-cli-typecheck",
+              "command": "npm run typecheck",
+              "expected": "success",
+              "outcome": "success",
+              "expectationMet": true,
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "stdout": "\n> ts7-ecosystem-vite@0.0.0 typecheck\n> tsc --project tsconfig.json",
+              "stderr": ""
+            },
+            {
+              "id": "vite-build",
+              "command": "npm run build",
+              "expected": "success",
+              "outcome": "success",
+              "expectationMet": true,
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "stdout": "\n> ts7-ecosystem-vite@0.0.0 build\n> vite build\n\nvite v6.4.3 building for production...\ntransforming...\n✓ 3 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                0.32 kB │ gzip: 0.23 kB\ndist/assets/index-DaiIzpeA.js  0.95 kB │ gzip: 0.54 kB\n✓ built in 299ms",
+              "stderr": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Vitest",
+      "version": "4.1.10",
+      "classification": "TS7_STANDALONE",
+      "blocker": null,
+      "migrationNote": "Vitest executes TypeScript through the Vite transform pipeline rather than the TypeScript programmatic API. Keep a separate TS7 tsc step because the test run itself is not a type check.",
+      "scenarios": [
+        {
+          "id": "vitest-ts7-only",
+          "fixture": "fixtures/ecosystem/vitest",
+          "commands": [
+            {
+              "id": "install",
+              "command": "npm ci --ignore-scripts --no-audit --no-fund",
+              "expected": "success",
+              "outcome": "success",
+              "expectationMet": true,
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "stdout": "\nadded 44 packages in 547ms",
+              "stderr": ""
+            },
+            {
+              "id": "ts7-cli-typecheck",
+              "command": "npm run typecheck",
+              "expected": "success",
+              "outcome": "success",
+              "expectationMet": true,
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "stdout": "\n> ts7-ecosystem-vitest@0.0.0 typecheck\n> tsc --project tsconfig.json",
+              "stderr": ""
+            },
+            {
+              "id": "vitest-run",
+              "command": "npm test",
+              "expected": "success",
+              "outcome": "success",
+              "expectationMet": true,
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "stdout": "\n> ts7-ecosystem-vitest@0.0.0 test\n> vitest run --reporter=verbose\n\n\n RUN  v4.1.10 <repo>/fixtures/ecosystem/vitest\n\n ✓ test/math.test.ts > sum > adds two numbers 1ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  01:28:30\n   Duration  390ms (transform 277ms, setup 0ms, import 287ms, tests 2ms, environment 0ms)",
+              "stderr": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
