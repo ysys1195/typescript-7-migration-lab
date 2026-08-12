@@ -243,7 +243,7 @@ export async function executeBenchmarkPlan({
     const args = [...fixture.args, ...variant.extraArgs, "--pretty", "false"];
     let attempt;
     try {
-      const outcome = await execute(variant.compiler, args, { timeoutMs });
+      const outcome = await execute(variant.compiler, args, { timeoutMs, fixture });
       attempt = createAttempt(planItem, outcome);
     } catch (error) {
       attempt = createRunnerErrorAttempt(

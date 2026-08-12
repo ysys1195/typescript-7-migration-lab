@@ -4,6 +4,7 @@ import { validateResultDocument } from "../scripts/schema.mjs";
 import {
   createBenchmarkResult,
   createComparisonResult,
+  createCurrentBenchmarkResult,
   createLegacyBenchmarkResult,
   createScalingBenchmarkResult,
   createVersion2BenchmarkResult
@@ -21,10 +22,47 @@ test("scaling benchmark result follows schema version 3.1.0", () => {
   assert.equal(validateResultDocument(scaling), scaling);
 });
 
-test("current benchmark result follows schema version 4.1.0", () => {
-  const current = createScalingBenchmarkResult();
-  current.schemaVersion = "4.1.0";
+test("current benchmark result follows schema version 4.2.0", () => {
+  const current = createCurrentBenchmarkResult();
   assert.equal(validateResultDocument(current), current);
+});
+
+test("schema version 4.1 benchmark remains readable without fixture presets", () => {
+  const version41 = createCurrentBenchmarkResult();
+  version41.schemaVersion = "4.1.0";
+  delete version41.configuration.fixturePreset;
+  delete version41.configuration.replay.environment.LAB_FIXTURE_PRESET;
+  assert.equal(validateResultDocument(version41), version41);
+});
+
+test("schema version 4.2 requires consistent fixture preset metadata", () => {
+  const missing = createCurrentBenchmarkResult();
+  delete missing.configuration.fixturePreset;
+  assert.throws(
+    () => validateResultDocument(missing),
+    /semantic validation failed/
+  );
+
+  const inconsistent = createCurrentBenchmarkResult();
+  inconsistent.configuration.replay.environment.LAB_FIXTURE_PRESET = "large";
+  assert.throws(
+    () => validateResultDocument(inconsistent),
+    /semantic validation failed/
+  );
+});
+
+test("schema version 4.2 validates stateful fixture metadata", () => {
+  const valid = createCurrentBenchmarkResult();
+  valid.configuration.fixtures[0].measurement = "incremental";
+  valid.configuration.fixtures[0].state = "edit";
+  assert.equal(validateResultDocument(valid), valid);
+
+  const invalid = createCurrentBenchmarkResult();
+  invalid.configuration.fixtures[0].measurement = "incremental";
+  assert.throws(
+    () => validateResultDocument(invalid),
+    /semantic validation failed/
+  );
 });
 
 test("schema version 3.1 requires complete checker and builder matrices", () => {
@@ -302,7 +340,7 @@ test("version 3 benchmark rejects missing fixture results", () => {
   );
 });
 
-test("comparison result follows schema version 4.1.0", () => {
+test("comparison result follows schema version 4.2.0", () => {
   assert.equal(validateResultDocument(comparison), comparison);
 });
 
@@ -312,6 +350,12 @@ test("schema version 4.0 comparison remains readable", () => {
   delete version4.configuration.compilerOptionCatalog;
   delete version4.compilerOptions;
   assert.equal(validateResultDocument(version4), version4);
+});
+
+test("schema version 4.1 comparison remains readable", () => {
+  const version41 = structuredClone(comparison);
+  version41.schemaVersion = "4.1.0";
+  assert.equal(validateResultDocument(version41), version41);
 });
 
 test("legacy comparison results remain readable", () => {

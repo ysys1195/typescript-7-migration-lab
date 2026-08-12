@@ -6,20 +6,12 @@ import test from "node:test";
 import { createResultStore } from "../scripts/result-store.mjs";
 import {
   createComparisonResult,
-  createScalingBenchmarkResult,
+  createCurrentBenchmarkResult,
   defaultMetadata,
   defaultRunId
 } from "./helpers/result-documents.mjs";
 
 const secondRunId = "223e4567-e89b-42d3-b456-426614174001";
-
-function createCurrentBenchmarkResult(overrides = {}) {
-  return {
-    ...createScalingBenchmarkResult(),
-    schemaVersion: "4.1.0",
-    ...overrides
-  };
-}
 
 async function createTestStore(t, options = {}) {
   const baseDir = await mkdtemp(path.join(os.tmpdir(), "ts7-result-store-"));

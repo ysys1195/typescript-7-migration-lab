@@ -240,6 +240,30 @@ export function createScalingBenchmarkResult() {
   return source;
 }
 
+export function createCurrentBenchmarkResult(overrides = {}) {
+  const source = createScalingBenchmarkResult();
+  source.schemaVersion = "4.2.0";
+  source.configuration.fixturePreset = {
+    name: "medium",
+    values: {
+      manyFiles: 400,
+      parseFiles: 48,
+      parseStatementsPerFile: 240,
+      typeFiles: 24,
+      typeInstantiationsPerFile: 80,
+      emitFiles: 80,
+      declarationFiles: 64,
+      modulePackages: 80,
+      incrementalFiles: 160,
+      watchFiles: 80,
+      dagLayers: 4,
+      dagWidth: 3
+    }
+  };
+  source.configuration.replay.environment.LAB_FIXTURE_PRESET = "medium";
+  return { ...source, ...overrides };
+}
+
 export function createLegacyBenchmarkResult() {
   return {
     ...common({ schemaVersion: "1.0.0" }),
@@ -265,7 +289,7 @@ export function createLegacyBenchmarkResult() {
 
 export function createComparisonResult(overrides = {}) {
   return {
-    ...common({ schemaVersion: "4.1.0", ...overrides }),
+    ...common({ schemaVersion: "4.2.0", ...overrides }),
     kind: "comparison",
     configuration: {
       diagnosticFixtures: [{ name: "small" }],

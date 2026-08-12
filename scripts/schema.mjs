@@ -223,10 +223,16 @@ function validateScalingConfiguration(configuration, fixtureNames) {
 
 function validateBenchmarkV2(value) {
   const { configuration } = value;
-  const resourceEnabled = ["3.0.0", "3.1.0", "4.0.0", "4.1.0"].includes(
+  const resourceEnabled = [
+    "3.0.0",
+    "3.1.0",
+    "4.0.0",
+    "4.1.0",
+    "4.2.0"
+  ].includes(
     value.schemaVersion
   );
-  const scalingEnabled = ["3.1.0", "4.0.0", "4.1.0"].includes(
+  const scalingEnabled = ["3.1.0", "4.0.0", "4.1.0", "4.2.0"].includes(
     value.schemaVersion
   );
   if (resourceEnabled && !configuration.resourceMeasurement) {
@@ -234,6 +240,25 @@ function validateBenchmarkV2(value) {
   }
   if (!resourceEnabled && configuration.resourceMeasurement) {
     semanticError("Schema 2 benchmark cannot contain schema 3 resource fields.");
+  }
+  if (value.schemaVersion === "4.2.0") {
+    if (!configuration.fixturePreset) {
+      semanticError("Schema 4.2 benchmark requires fixturePreset configuration.");
+    }
+    if (configuration.replay.environment.LAB_FIXTURE_PRESET !==
+      configuration.fixturePreset.name) {
+      semanticError("Fixture preset and replay environment are inconsistent.");
+    }
+    const generatedManyFiles = Number.parseInt(
+      configuration.replay.environment.LAB_FILE_COUNT,
+      10
+    );
+    if (generatedManyFiles !== configuration.fixturePreset.values.manyFiles) {
+      semanticError("many-files scale and fixture preset metadata are inconsistent.");
+    }
+  } else if (configuration.fixturePreset ||
+    configuration.replay.environment.LAB_FIXTURE_PRESET) {
+    semanticError("Schema versions before 4.2 cannot contain fixture presets.");
   }
   const fixtureNames = configuration.fixtures.map((fixture) => fixture.name);
   const variantNames = configuration.variants.map((variant) => variant.name);
@@ -244,6 +269,17 @@ function validateBenchmarkV2(value) {
     new Set(variantNames).size !== variantNames.length
   ) {
     semanticError("Fixture and variant names must be non-empty and unique.");
+  }
+  for (const fixture of configuration.fixtures) {
+    if (fixture.measurement === "incremental" && !fixture.state) {
+      semanticError(`Incremental fixture ${fixture.name} requires a state.`);
+    }
+    if (fixture.measurement === "watch" && fixture.state) {
+      semanticError(`Watch fixture ${fixture.name} cannot contain incremental state.`);
+    }
+    if (!fixture.measurement && fixture.state) {
+      semanticError(`Standard fixture ${fixture.name} cannot contain state.`);
+    }
   }
   if (scalingEnabled) {
     validateScalingConfiguration(configuration, fixtureNames);
@@ -537,7 +573,7 @@ export function validateResultDocument(value) {
     if (value.kind === "benchmark" && value.schemaVersion !== "1.0.0") {
       validateBenchmarkV2(value);
     }
-    if (value.kind === "comparison" && ["4.0.0", "4.1.0"].includes(
+    if (value.kind === "comparison" && ["4.0.0", "4.1.0", "4.2.0"].includes(
       value.schemaVersion
     )) {
       validateComparisonV4(value);
@@ -547,7 +583,9 @@ export function validateResultDocument(value) {
     )) {
       semanticError("Schema 4.0 comparison cannot contain compiler option results.");
     }
-    if (value.kind === "comparison" && value.schemaVersion === "4.1.0") {
+    if (value.kind === "comparison" && ["4.1.0", "4.2.0"].includes(
+      value.schemaVersion
+    )) {
       validateCompilerOptionsV41(value);
     }
     return value;

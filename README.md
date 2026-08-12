@@ -14,6 +14,7 @@ TypeScript 6（JavaScript実装）とTypeScript 7（Goによるネイティブ�
 - [checker・builder scaling実験](docs/scaling-experiments.md)
 - [diagnosticsの構造化比較](docs/diagnostic-comparison.md)
 - [compiler option migration catalog](docs/compiler-options.md)
+- [性能fixtureとsize preset](docs/performance-fixtures.md)
 
 このラボでは次の問いを扱います。
 
@@ -67,12 +68,13 @@ run IDから正本を読み込みます。
 ## Measuring different sizes
 
 ```bash
-LAB_FILE_COUNT=1000 LAB_RUNS=20 LAB_WARMUPS=3 npm run lab
+LAB_FIXTURE_PRESET=large LAB_RUNS=20 LAB_WARMUPS=3 npm run lab
 ```
 
 | 変数 | デフォルト | 意味 |
 |---|---:|---|
-| `LAB_FILE_COUNT` | 400 | many-files fixtureのファイル数 |
+| `LAB_FIXTURE_PRESET` | `medium` | 全生成fixtureの`small`／`medium`／`large` preset |
+| `LAB_FILE_COUNT` | presetの値 | many-filesだけのファイル数上書き |
 | `LAB_RUNS` | 10 | 各ケースの計測回数 |
 | `LAB_WARMUPS` | 2 | 計測前のwarm-up回数 |
 | `LAB_FIXTURE_TIMEOUT_MS` | 120000 | compiler実行1回あたりのtimeout（ms） |
@@ -141,11 +143,23 @@ macOSでは`-lp`のprobeでCPU時間だけ取得できた場合、collector
 - `jsx`: JSXのパースと型チェック
 - `jsdoc`: JavaScript + JSDoc + `checkJs`
 - `monorepo`: project referencesとbuild mode
+- `startup-only`: projectを読まないプロセス起動とCLI初期化
+- `parse-heavy`: `noCheck`／`noEmit`で構文解析を強調する生成source
+- `type-heavy-scaled`: presetで幅と件数を変える合成型計算
+- `emit-heavy`: 出力を毎回消して測るJavaScript emit
+- `declaration-heavy`: 出力を毎回消して測る`.d.ts` emit
+- `module-resolution`: 多数の生成packageとexportsの解決
+- `incremental`: 初回、変更なし、1ファイル編集後の独立した測定
+- `watch`: 初回build後の編集から次の正常診断まで
+- `project-references-dag`: presetで深さと幅を変えるlayered DAG
 - `builder-scaling`: core後に4つの独立leafをbuildできるbuilder並列度用DAG
 - `diagnostics`: 意図的な型エラー
 - `emit`: JavaScriptと`.d.ts`の比較
 - `legacy-options`: TS7で削除・変更された設定の観察
 - `compiler-options`: optionごとの最小再現fixture
+
+生成fixtureの規模、測定境界、目的と限界は
+[性能fixtureとsize preset](docs/performance-fixtures.md)を参照してください。
 
 ## Important limitation
 

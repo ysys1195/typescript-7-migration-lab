@@ -1,5 +1,5 @@
 import path from "node:path";
-import { readdir } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import {
   buildExecutionPlan,
   executeBenchmarkPlan,
@@ -17,6 +17,12 @@ import {
   createResourceMeasurer,
   unavailableResourceUsage
 } from "./resource-measurement.mjs";
+import {
+  assertFixtureGenerationMatches,
+  FIXTURE_GENERATION_MANIFEST,
+  readFixturePreset
+} from "./fixture-presets.mjs";
+import { createFixtureExecutor } from "./fixture-execution.mjs";
 
 const runs = Number.parseInt(process.env.LAB_RUNS ?? "10", 10);
 const warmups = Number.parseInt(process.env.LAB_WARMUPS ?? "2", 10);
@@ -43,7 +49,18 @@ const standardFixtureNames = [
   "many-files",
   "jsx",
   "jsdoc",
-  "monorepo"
+  "monorepo",
+  "startup-only",
+  "parse-heavy",
+  "type-heavy-scaled",
+  "emit-heavy",
+  "declaration-heavy",
+  "module-resolution",
+  "incremental-initial",
+  "incremental-no-change",
+  "incremental-edit",
+  "watch-edit",
+  "project-references-dag"
 ];
 const fixtures = [
   { name: "small", args: ["-p", "fixtures/small", "--extendedDiagnostics"] },
@@ -54,6 +71,61 @@ const fixtures = [
   {
     name: "monorepo",
     args: ["--build", "fixtures/monorepo", "--force", "--extendedDiagnostics"]
+  },
+  { name: "startup-only", args: ["--version"] },
+  {
+    name: "parse-heavy",
+    args: ["-p", "fixtures/parse-heavy", "--extendedDiagnostics"]
+  },
+  {
+    name: "type-heavy-scaled",
+    args: ["-p", "fixtures/type-heavy-scaled", "--extendedDiagnostics"]
+  },
+  {
+    name: "emit-heavy",
+    args: ["-p", "fixtures/emit-heavy", "--extendedDiagnostics"],
+    resetPaths: ["fixtures/emit-heavy/dist"]
+  },
+  {
+    name: "declaration-heavy",
+    args: ["-p", "fixtures/declaration-heavy", "--extendedDiagnostics"],
+    resetPaths: ["fixtures/declaration-heavy/dist"]
+  },
+  {
+    name: "module-resolution",
+    args: ["-p", "fixtures/module-resolution", "--extendedDiagnostics"]
+  },
+  {
+    name: "incremental-initial",
+    args: ["--extendedDiagnostics"],
+    measurement: "incremental",
+    state: "initial"
+  },
+  {
+    name: "incremental-no-change",
+    args: ["--extendedDiagnostics"],
+    measurement: "incremental",
+    state: "no-change"
+  },
+  {
+    name: "incremental-edit",
+    args: ["--extendedDiagnostics"],
+    measurement: "incremental",
+    state: "edit"
+  },
+  {
+    name: "watch-edit",
+    args: [],
+    measurement: "watch"
+  },
+  {
+    name: "project-references-dag",
+    args: [
+      "--build",
+      "fixtures/project-references-dag/generated",
+      "--force",
+      "--extendedDiagnostics"
+    ]
   },
   {
     name: "builder-scaling",
@@ -121,16 +193,32 @@ const generatedFiles = await readdir(
 const generatedFileCount = generatedFiles.filter((filename) =>
   filename.endsWith(".ts")
 ).length;
+const fixturePreset = readFixturePreset();
 if (generatedFileCount < 2) {
   throw new Error("Generate the many-files fixture before running the benchmark.");
 }
+let fixtureGenerationManifest;
+try {
+  fixtureGenerationManifest = JSON.parse(await readFile(
+    path.join(root, FIXTURE_GENERATION_MANIFEST),
+    "utf8"
+  ));
+} catch (error) {
+  throw new Error(
+    "Fixture generation metadata is missing or invalid. " +
+    "Run npm run fixtures:generate before running the benchmark.",
+    { cause: error }
+  );
+}
+assertFixtureGenerationMatches(fixtureGenerationManifest, fixturePreset);
 
 const executionPlan = buildExecutionPlan({ fixtures, variants, warmups, runs });
 const replayEnvironment = {
   LAB_RUNS: String(runs),
   LAB_WARMUPS: String(warmups),
   LAB_FIXTURE_TIMEOUT_MS: String(timeoutMs),
-  LAB_FILE_COUNT: String(generatedFileCount)
+  LAB_FILE_COUNT: String(generatedFileCount),
+  LAB_FIXTURE_PRESET: fixturePreset.name
 };
 
 console.log(`Execution order: ${ORDER_STRATEGY}`);
@@ -152,19 +240,35 @@ try {
       timeoutMs,
       orderStrategy: ORDER_STRATEGY,
       resourceMeasurement: resourceMeasurer.capability,
-      fixtures: fixtures.map(({ name, args }) => ({ name, args })),
-    variants: variants.map(({
-      name,
-      extraArgs,
-      applicableFixtures,
-      scaling
-    }) => ({
-      name,
-      compiler: name === "ts6" ? "ts6" : "ts7",
-      extraArgs,
-      applicableFixtures,
-      ...(scaling ? { scaling } : {})
-    })),
+      fixturePreset: {
+        name: fixturePreset.name,
+        values: fixturePreset.values
+      },
+      fixtures: fixtures.map(({
+        name,
+        args,
+        measurement,
+        state,
+        resetPaths
+      }) => ({
+        name,
+        args,
+        ...(measurement ? { measurement } : {}),
+        ...(state ? { state } : {}),
+        ...(resetPaths ? { resetPaths } : {})
+      })),
+      variants: variants.map(({
+        name,
+        extraArgs,
+        applicableFixtures,
+        scaling
+      }) => ({
+        name,
+        compiler: name === "ts6" ? "ts6" : "ts7",
+        extraArgs,
+        applicableFixtures,
+        ...(scaling ? { scaling } : {})
+      })),
       executionPlan,
       replay: {
         command: "npm run lab",
@@ -179,7 +283,7 @@ try {
     variants,
     runs,
     timeoutMs,
-    execute: resourceMeasurer.execute,
+    execute: createFixtureExecutor(resourceMeasurer),
     parseDiagnostics: parseExtendedDiagnostics,
     runnerErrorResourceUsage: unavailableResourceUsage(
       "runner-error",

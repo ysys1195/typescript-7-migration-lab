@@ -147,7 +147,7 @@ const resourceReasons = [...new Set(benchmark.results.flatMap((result) => {
 }))];
 const scalingReport = formatScalingReport(benchmark);
 
-const structuredDiagnostics = ["4.0.0", "4.1.0"].includes(
+const structuredDiagnostics = ["4.0.0", "4.1.0", "4.2.0"].includes(
   comparison.schemaVersion
 );
 const diagnosticRows = comparison.diagnostics.map((item) => structuredDiagnostics
@@ -214,6 +214,9 @@ Comparison run: ${comparison.runId}
 - Memory: ${benchmark.metadata.hardware.totalMemoryBytes} bytes
 - Git: ${benchmark.metadata.git.commitSha ?? "unavailable"} (${benchmark.metadata.git.branch ?? "detached"}, ${benchmark.metadata.git.dirty ? "dirty" : "clean"})
 - Runs: ${benchmark.configuration.runs} measured, ${benchmark.configuration.warmups} warm-up, ${benchmark.configuration.coldRuns ?? 0} cold
+${benchmark.configuration.fixturePreset
+  ? `- Fixture preset: ${benchmark.configuration.fixturePreset.name} (${JSON.stringify(benchmark.configuration.fixturePreset.values)})`
+  : ""}
 ${benchmark.configuration.timeoutMs
   ? `- Timeout: ${benchmark.configuration.timeoutMs} ms per compiler invocation\n- Order: ${benchmark.configuration.orderStrategy}`
   : ""}
