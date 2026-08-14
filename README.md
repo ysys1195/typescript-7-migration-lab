@@ -12,6 +12,7 @@ TypeScript 6（JavaScript実装）とTypeScript 7（Goによるネイティブ�
 - [過去runの比較](docs/historical-comparisons.md)
 - [read-only local dashboard](docs/dashboard.md)
 - [ecosystem compatibility](docs/ecosystem-compatibility.md)
+- [continuous integration](docs/ci.md)
 - [ベンチマーク手法](docs/benchmark-methodology.md)
 - [CPU・メモリ測定方式](docs/resource-measurement.md)
 - [checker・builder scaling実験](docs/scaling-experiments.md)
@@ -64,6 +65,7 @@ npm run test:options
 npm run test:history
 npm run test:dashboard
 npm run test:ecosystem
+npm run test:ci
 npm run runs
 ```
 

@@ -106,6 +106,7 @@ sys 0.01
   };
   const measurer = await createResourceMeasurer({
     platform: "darwin",
+    timeCommand: process.execPath,
     executeCommand,
     temporaryRoot
   });
@@ -115,7 +116,7 @@ sys 0.01
   });
 
   assert.equal(measurer.capability.cpuTime.status, "available");
-  assert.equal(calls.at(-1).command, "/usr/bin/time");
+  assert.equal(calls.at(-1).command, process.execPath);
   assert.equal(calls.at(-1).options.env.LC_ALL, "C");
   assert.equal(calls.at(-1).options.killProcessGroup, true);
   assert.equal(outcome.stdout, "compiler stdout");
@@ -128,6 +129,7 @@ test("probe capability keeps an independently available CPU metric", async (t) =
   t.after(() => rm(temporaryRoot, { recursive: true, force: true }));
   const measurer = await createResourceMeasurer({
     platform: "darwin",
+    timeCommand: process.execPath,
     temporaryRoot,
     executeCommand: async (command, args) => {
       const outputPath = args[args.indexOf("-o") + 1];
@@ -156,6 +158,7 @@ test("Darwin falls back to CPU-only time when RSS collection makes probe fail", 
   const calls = [];
   const measurer = await createResourceMeasurer({
     platform: "darwin",
+    timeCommand: process.execPath,
     temporaryRoot,
     executeCommand: async (command, args) => {
       calls.push(args);
@@ -187,6 +190,7 @@ test("failed probes fall back without changing the compiler result", async (t) =
   let call = 0;
   const measurer = await createResourceMeasurer({
     platform: "darwin",
+    timeCommand: process.execPath,
     temporaryRoot,
     executeCommand: async (command) => {
       call += 1;
@@ -239,6 +243,7 @@ test("missing collectors fall back and preserve an explicit reason", async () =>
 test("temporary directory setup failures fall back to direct execution", async () => {
   const measurer = await createResourceMeasurer({
     platform: "darwin",
+    timeCommand: process.execPath,
     temporaryRoot: "/definitely/missing/resource-root",
     executeCommand: async (command) => ({
       exitCode: 0,
@@ -261,6 +266,7 @@ test("timeout discards incomplete metrics after a successful probe", async (t) =
   let call = 0;
   const measurer = await createResourceMeasurer({
     platform: "darwin",
+    timeCommand: process.execPath,
     temporaryRoot,
     executeCommand: async (command, args) => {
       call += 1;

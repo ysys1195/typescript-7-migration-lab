@@ -1,0 +1,344 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "ci-compatibility-golden",
+  "compilers": {
+    "ts6": {
+      "version": "6.0.3"
+    },
+    "ts7": {
+      "version": "7.0.2"
+    }
+  },
+  "normalization": {
+    "diagnosticPaths": "repository-relative forward-slash paths",
+    "emitPaths": "forward-slash paths",
+    "emitLineEndings": "LF"
+  },
+  "smoke": [
+    {
+      "fixture": "small",
+      "ts6": {
+        "exitCode": 0
+      },
+      "ts7": {
+        "exitCode": 0
+      }
+    },
+    {
+      "fixture": "type-heavy",
+      "ts6": {
+        "exitCode": 0
+      },
+      "ts7": {
+        "exitCode": 0
+      }
+    },
+    {
+      "fixture": "many-files",
+      "ts6": {
+        "exitCode": 0
+      },
+      "ts7": {
+        "exitCode": 0
+      }
+    },
+    {
+      "fixture": "jsx",
+      "ts6": {
+        "exitCode": 0
+      },
+      "ts7": {
+        "exitCode": 0
+      }
+    },
+    {
+      "fixture": "jsdoc",
+      "ts6": {
+        "exitCode": 0
+      },
+      "ts7": {
+        "exitCode": 0
+      }
+    },
+    {
+      "fixture": "diagnostics",
+      "ts6": {
+        "exitCode": 2
+      },
+      "ts7": {
+        "exitCode": 1
+      }
+    },
+    {
+      "fixture": "legacy-options",
+      "ts6": {
+        "exitCode": 2
+      },
+      "ts7": {
+        "exitCode": 1
+      }
+    },
+    {
+      "fixture": "module-resolution",
+      "ts6": {
+        "exitCode": 0
+      },
+      "ts7": {
+        "exitCode": 0
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "fixture": "small",
+      "ts6": {
+        "exitCode": 0,
+        "diagnostics": []
+      },
+      "ts7": {
+        "exitCode": 0,
+        "diagnostics": []
+      }
+    },
+    {
+      "fixture": "type-heavy",
+      "ts6": {
+        "exitCode": 0,
+        "diagnostics": []
+      },
+      "ts7": {
+        "exitCode": 0,
+        "diagnostics": []
+      }
+    },
+    {
+      "fixture": "jsx",
+      "ts6": {
+        "exitCode": 0,
+        "diagnostics": []
+      },
+      "ts7": {
+        "exitCode": 0,
+        "diagnostics": []
+      }
+    },
+    {
+      "fixture": "jsdoc",
+      "ts6": {
+        "exitCode": 0,
+        "diagnostics": []
+      },
+      "ts7": {
+        "exitCode": 0,
+        "diagnostics": []
+      }
+    },
+    {
+      "fixture": "diagnostics",
+      "ts6": {
+        "exitCode": 2,
+        "diagnostics": [
+          {
+            "code": 2322,
+            "category": "error",
+            "file": "fixtures/diagnostics/src/index.ts",
+            "line": 7,
+            "column": 3,
+            "message": "Type 'number' is not assignable to type 'string'."
+          },
+          {
+            "code": 2322,
+            "category": "error",
+            "file": "fixtures/diagnostics/src/index.ts",
+            "line": 8,
+            "column": 3,
+            "message": "Type 'string' is not assignable to type 'boolean'."
+          },
+          {
+            "code": 2339,
+            "category": "error",
+            "file": "fixtures/diagnostics/src/index.ts",
+            "line": 11,
+            "column": 32,
+            "message": "Property 'name' does not exist on type 'Account'."
+          }
+        ]
+      },
+      "ts7": {
+        "exitCode": 1,
+        "diagnostics": [
+          {
+            "code": 2322,
+            "category": "error",
+            "file": "fixtures/diagnostics/src/index.ts",
+            "line": 7,
+            "column": 3,
+            "message": "Type 'number' is not assignable to type 'string'."
+          },
+          {
+            "code": 2322,
+            "category": "error",
+            "file": "fixtures/diagnostics/src/index.ts",
+            "line": 8,
+            "column": 3,
+            "message": "Type 'string' is not assignable to type 'boolean'."
+          },
+          {
+            "code": 2339,
+            "category": "error",
+            "file": "fixtures/diagnostics/src/index.ts",
+            "line": 11,
+            "column": 32,
+            "message": "Property 'name' does not exist on type 'Account'."
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "legacy-options",
+      "ts6": {
+        "exitCode": 2,
+        "diagnostics": [
+          {
+            "code": 5107,
+            "category": "error",
+            "file": "fixtures/legacy-options/tsconfig.json",
+            "line": 4,
+            "column": 15,
+            "message": "Option 'target=ES5' is deprecated and will stop functioning in TypeScript 7.0. Specify compilerOption '\"ignoreDeprecations\": \"6.0\"' to silence this error."
+          },
+          {
+            "code": 5107,
+            "category": "error",
+            "file": "fixtures/legacy-options/tsconfig.json",
+            "line": 5,
+            "column": 15,
+            "message": "Option 'module=AMD' is deprecated and will stop functioning in TypeScript 7.0. Specify compilerOption '\"ignoreDeprecations\": \"6.0\"' to silence this error."
+          },
+          {
+            "code": 5107,
+            "category": "error",
+            "file": "fixtures/legacy-options/tsconfig.json",
+            "line": 6,
+            "column": 25,
+            "message": "Option 'moduleResolution=node10' is deprecated and will stop functioning in TypeScript 7.0. Specify compilerOption '\"ignoreDeprecations\": \"6.0\"' to silence this error.\nVisit https://aka.ms/ts6 for migration information."
+          },
+          {
+            "code": 5101,
+            "category": "error",
+            "file": "fixtures/legacy-options/tsconfig.json",
+            "line": 7,
+            "column": 5,
+            "message": "Option 'baseUrl' is deprecated and will stop functioning in TypeScript 7.0. Specify compilerOption '\"ignoreDeprecations\": \"6.0\"' to silence this error.\nVisit https://aka.ms/ts6 for migration information."
+          },
+          {
+            "code": 5101,
+            "category": "error",
+            "file": "fixtures/legacy-options/tsconfig.json",
+            "line": 8,
+            "column": 5,
+            "message": "Option 'downlevelIteration' is deprecated and will stop functioning in TypeScript 7.0. Specify compilerOption '\"ignoreDeprecations\": \"6.0\"' to silence this error."
+          },
+          {
+            "code": 5107,
+            "category": "error",
+            "file": "fixtures/legacy-options/tsconfig.json",
+            "line": 9,
+            "column": 24,
+            "message": "Option 'esModuleInterop=false' is deprecated and will stop functioning in TypeScript 7.0. Specify compilerOption '\"ignoreDeprecations\": \"6.0\"' to silence this error."
+          }
+        ]
+      },
+      "ts7": {
+        "exitCode": 1,
+        "diagnostics": [
+          {
+            "code": 5108,
+            "category": "error",
+            "file": "fixtures/legacy-options/tsconfig.json",
+            "line": 4,
+            "column": 15,
+            "message": "Option 'target=ES5' has been removed. Please remove it from your configuration."
+          },
+          {
+            "code": 5108,
+            "category": "error",
+            "file": "fixtures/legacy-options/tsconfig.json",
+            "line": 5,
+            "column": 15,
+            "message": "Option 'module=AMD' has been removed. Please remove it from your configuration."
+          },
+          {
+            "code": 5095,
+            "category": "error",
+            "file": "fixtures/legacy-options/tsconfig.json",
+            "line": 6,
+            "column": 25,
+            "message": "Option 'bundler' can only be used when 'module' is set to 'preserve', 'commonjs', or 'es2015' or later."
+          },
+          {
+            "code": 5108,
+            "category": "error",
+            "file": "fixtures/legacy-options/tsconfig.json",
+            "line": 6,
+            "column": 25,
+            "message": "Option 'moduleResolution=node10' has been removed. Please remove it from your configuration."
+          },
+          {
+            "code": 5102,
+            "category": "error",
+            "file": "fixtures/legacy-options/tsconfig.json",
+            "line": 7,
+            "column": 5,
+            "message": "Option 'baseUrl' has been removed. Please remove it from your configuration.\nUse '\"paths\": {\"*\": [\"./*\"]}' instead."
+          },
+          {
+            "code": 5102,
+            "category": "error",
+            "file": "fixtures/legacy-options/tsconfig.json",
+            "line": 8,
+            "column": 5,
+            "message": "Option 'downlevelIteration' has been removed. Please remove it from your configuration."
+          },
+          {
+            "code": 5108,
+            "category": "error",
+            "file": "fixtures/legacy-options/tsconfig.json",
+            "line": 9,
+            "column": 24,
+            "message": "Option 'esModuleInterop=false' has been removed. Please remove it from your configuration."
+          }
+        ]
+      }
+    }
+  ],
+  "emit": {
+    "fixture": "emit",
+    "ts6": {
+      "exitCode": 0,
+      "files": [
+        {
+          "filename": "index.d.ts",
+          "content": "export type Result<T, E = Error> = {\n    ok: true;\n    value: T;\n} | {\n    ok: false;\n    error: E;\n};\nexport declare function attempt<T>(operation: () => Promise<T>): Promise<Result<T>>;\n"
+        },
+        {
+          "filename": "index.js",
+          "content": "export async function attempt(operation) {\n    try {\n        return { ok: true, value: await operation() };\n    }\n    catch (error) {\n        return {\n            ok: false,\n            error: error instanceof Error ? error : new Error(String(error))\n        };\n    }\n}\n"
+        }
+      ]
+    },
+    "ts7": {
+      "exitCode": 0,
+      "files": [
+        {
+          "filename": "index.d.ts",
+          "content": "export type Result<T, E = Error> = {\n    ok: true;\n    value: T;\n} | {\n    ok: false;\n    error: E;\n};\nexport declare function attempt<T>(operation: () => Promise<T>): Promise<Result<T>>;\n"
+        },
+        {
+          "filename": "index.js",
+          "content": "export async function attempt(operation) {\n    try {\n        return { ok: true, value: await operation() };\n    }\n    catch (error) {\n        return {\n            ok: false,\n            error: error instanceof Error ? error : new Error(String(error))\n        };\n    }\n}\n"
+        }
+      ]
+    }
+  }
+}
