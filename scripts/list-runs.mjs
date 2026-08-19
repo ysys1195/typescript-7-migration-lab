@@ -8,6 +8,7 @@ if (runs.length === 0) {
 } else {
   console.table(runs.map((run) => ({
     runId: run.runId,
+    kind: run.kind ?? "invalid",
     status: run.status,
     createdAt: run.createdAt ?? "—",
     completedAt: run.completedAt ?? "—",

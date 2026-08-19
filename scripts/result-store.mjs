@@ -13,6 +13,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   RESULT_STORAGE_VERSION,
+  validateLocalProjectResultDocument,
   validateResultDocument,
   validateStorageDocument
 } from "./schema.mjs";
@@ -27,6 +28,7 @@ const artifactNames = {
   benchmark: "benchmark.json",
   comparison: "comparison.json"
 };
+const localProjectArtifactName = "local-project.json";
 
 function assertRunId(runId) {
   if (!runIdPattern.test(runId)) {
@@ -107,7 +109,10 @@ export function createResultStore(options = {}) {
       `Run manifest for ${runId}`
     );
     validateStorageDocument(manifest);
-    if (manifest.kind !== "run-manifest" || manifest.runId !== runId) {
+    if (
+      !["run-manifest", "local-project-run-manifest"].includes(manifest.kind) ||
+      manifest.runId !== runId
+    ) {
       throw new Error(`Run manifest does not match directory ${runId}.`);
     }
     return manifest;
@@ -141,6 +146,9 @@ export function createResultStore(options = {}) {
     const kind = value.kind;
     const filename = artifactPath(value.runId, kind);
     const existingManifest = await readManifestIfPresent(value.runId);
+    if (existingManifest?.kind === "local-project-run-manifest") {
+      throw new Error(`Run ${value.runId} belongs to a local project benchmark.`);
+    }
     if (existingManifest?.status === "complete") {
       throw new Error(`Run ${value.runId} is finalized and cannot be changed.`);
     }
@@ -216,6 +224,9 @@ export function createResultStore(options = {}) {
   async function finalizeRun(runId) {
     assertRunId(runId);
     const currentManifest = await readManifest(runId);
+    if (currentManifest.kind !== "run-manifest") {
+      throw new Error(`Run ${runId} is not a lab benchmark/comparison run.`);
+    }
     const { benchmark, comparison } = await validateRunPair(runId);
     const timestamp = now();
     const manifest = {
@@ -258,6 +269,11 @@ export function createResultStore(options = {}) {
   async function readRun(runId, options = {}) {
     const requireComplete = options.requireComplete ?? true;
     const manifest = await readManifest(runId);
+    if (manifest.kind !== "run-manifest") {
+      throw new Error(
+        `Run ${runId} is a local project run; use readLocalProjectRun().`
+      );
+    }
     if (requireComplete && manifest.status !== "complete") {
       throw new Error(`Run ${runId} is ${manifest.status}, not complete.`);
     }
@@ -272,6 +288,97 @@ export function createResultStore(options = {}) {
       throw new Error(`Run manifest artifact references are incomplete for ${runId}.`);
     }
     return { manifest, benchmark, comparison };
+  }
+
+  async function readLocalProjectRun(runId) {
+    assertRunId(runId);
+    const manifest = await readManifest(runId);
+    if (manifest.kind !== "local-project-run-manifest") {
+      throw new Error(`Run ${runId} is not a local project run.`);
+    }
+    if (manifest.status !== "complete" || manifest.artifact !== localProjectArtifactName) {
+      throw new Error(`Local project run ${runId} is not complete.`);
+    }
+    const value = await readJsonFile(
+      path.join(runDirectory(runId), localProjectArtifactName),
+      `Local project result for ${runId}`
+    );
+    validateLocalProjectResultDocument(value);
+    if (value.runId !== runId) {
+      throw new Error(`Local project result runId does not match directory ${runId}.`);
+    }
+    const expectedProject = {
+      id: value.project.id,
+      source: value.project.source
+    };
+    if (!isDeepStrictEqual(manifest.project, expectedProject)) {
+      throw new Error(`Local project manifest metadata does not match ${runId}.`);
+    }
+    return { manifest, result: value };
+  }
+
+  async function writeLocalProjectRun(value) {
+    validateLocalProjectResultDocument(value);
+    assertRunId(value.runId);
+    const filename = path.join(
+      runDirectory(value.runId),
+      localProjectArtifactName
+    );
+    const existingManifest = await readManifestIfPresent(value.runId);
+    if (existingManifest?.status === "complete") {
+      throw new Error(`Run ${value.runId} is finalized and cannot be changed.`);
+    }
+    if (existingManifest?.kind === "run-manifest") {
+      throw new Error(`Run ${value.runId} belongs to a lab benchmark/comparison run.`);
+    }
+
+    const timestamp = now();
+    const project = { id: value.project.id, source: value.project.source };
+    const partialManifest = existingManifest ?? {
+      storageVersion: RESULT_STORAGE_VERSION,
+      kind: "local-project-run-manifest",
+      runId: value.runId,
+      status: "partial",
+      createdAt: value.generatedAt,
+      updatedAt: timestamp,
+      completedAt: null,
+      project,
+      artifact: null
+    };
+    if (!isDeepStrictEqual(partialManifest.project, project)) {
+      throw new Error(`Project metadata does not match run ${value.runId}.`);
+    }
+    validateStorageDocument(partialManifest);
+    if (!existingManifest) {
+      await atomicWriteJson(manifestPath(value.runId), partialManifest);
+    }
+
+    if (await fileExists(filename)) {
+      const existing = await readJsonFile(
+        filename,
+        `Local project result for ${value.runId}`
+      );
+      validateLocalProjectResultDocument(existing);
+      if (!isDeepStrictEqual(existing, value)) {
+        throw new Error(
+          `Local project result recovery content does not match run ${value.runId}.`
+        );
+      }
+    } else {
+      await atomicWriteJson(filename, value);
+    }
+
+    const completedAt = now();
+    const manifest = {
+      ...partialManifest,
+      status: "complete",
+      updatedAt: completedAt,
+      completedAt,
+      artifact: localProjectArtifactName
+    };
+    validateStorageDocument(manifest);
+    await atomicWriteJson(manifestPath(value.runId), manifest);
+    return { path: filename, manifest };
   }
 
   async function readLatestPointer() {
@@ -341,9 +448,11 @@ export function createResultStore(options = {}) {
     listRuns,
     readLatestPointer,
     readLatestRun,
+    readLocalProjectRun,
     readRun,
     readRunResult,
     validateRunPair,
+    writeLocalProjectRun,
     writeRunResult
   };
 }

@@ -14,17 +14,34 @@ const storageSchema = JSON.parse(
 const runComparisonSchema = JSON.parse(
   readFileSync(path.join(root, "schemas", "run-comparison.schema.json"), "utf8")
 );
+const localProjectManifestSchema = JSON.parse(
+  readFileSync(
+    path.join(root, "schemas", "local-project-manifest.schema.json"),
+    "utf8"
+  )
+);
+const localProjectResultSchema = JSON.parse(
+  readFileSync(
+    path.join(root, "schemas", "local-project-result.schema.json"),
+    "utf8"
+  )
+);
 export const RESULT_SCHEMA_VERSION = schema.properties.schemaVersion.enum.at(-1);
 export const RESULT_STORAGE_VERSION =
   storageSchema.$defs.runManifest.properties.storageVersion.const;
 export const RUN_COMPARISON_SCHEMA_VERSION =
   runComparisonSchema.properties.schemaVersion.const;
+export const LOCAL_PROJECT_SCHEMA_VERSION =
+  localProjectResultSchema.properties.schemaVersion.const;
 
 const ajv = new Ajv2020({ allErrors: true, strict: true });
 ajv.addSchema(schema);
+ajv.addSchema(localProjectManifestSchema);
 const validate = ajv.getSchema(schema.$id);
 const validateStorage = ajv.compile(storageSchema);
 const validateRunComparison = ajv.compile(runComparisonSchema);
+const validateLocalProjectManifest = ajv.getSchema(localProjectManifestSchema.$id);
+const validateLocalProjectResult = ajv.compile(localProjectResultSchema);
 
 function formatErrors(errors) {
   return errors
@@ -606,6 +623,81 @@ export function validateStorageDocument(value) {
 
   const details = formatErrors(validateStorage.errors);
   throw new Error(`Run storage schema validation failed:\n${details}`);
+}
+
+export function validateLocalProjectManifestDocument(value) {
+  if (!validateLocalProjectManifest(value)) {
+    const details = formatErrors(validateLocalProjectManifest.errors);
+    throw new Error(`Local project manifest schema validation failed:\n${details}`);
+  }
+  const mappings = value.syntheticComparisons.map(
+    ({ workload, fixture }) => `${workload}\0${fixture}`
+  );
+  if (new Set(mappings).size !== mappings.length) {
+    throw new Error(
+      "Local project manifest semantic validation failed:\n" +
+      "Synthetic comparison mappings must be unique."
+    );
+  }
+  return value;
+}
+
+function validateLocalProjectResultSemantics(value) {
+  const { runs, warmups, variants, executionPlan } = value.configuration;
+  const expectedVariants = [
+    { name: "ts6", compiler: "ts6", extraArgs: [] },
+    { name: "ts7-single", compiler: "ts7", extraArgs: ["--singleThreaded"] },
+    { name: "ts7-default", compiler: "ts7", extraArgs: [] }
+  ];
+  if (!isDeepStrictEqual(variants, expectedVariants)) {
+    semanticError("Local project variants must preserve the three lab conditions.");
+  }
+  const expectedPairs = new Set(
+    ["typecheck", "build"].flatMap((workload) =>
+      expectedVariants.map((variant) => `${workload}\0${variant.name}`)
+    )
+  );
+  const attemptsPerPair = 1 + warmups + runs;
+  if (executionPlan.length !== expectedPairs.size * attemptsPerPair) {
+    semanticError("Local project execution plan has an unexpected size.");
+  }
+  const sequences = executionPlan.map((item) => item.sequence);
+  if (!isDeepStrictEqual(sequences, sequences.map((_, index) => index))) {
+    semanticError("Local project execution plan sequences must be contiguous.");
+  }
+  for (const result of value.results) {
+    const key = `${result.workload}\0${result.variant}`;
+    if (!expectedPairs.delete(key)) {
+      semanticError(`Local project result ${result.workload}/${result.variant} is duplicated.`);
+    }
+    if (
+      result.coldRun.phase !== "cold" ||
+      result.warmupAttempts.length !== warmups ||
+      result.warmupAttempts.some((attempt) => attempt.phase !== "warmup") ||
+      result.measurementAttempts.length !== runs ||
+      result.measurementAttempts.some((attempt) => attempt.phase !== "measured")
+    ) {
+      semanticError(`Local project attempts for ${result.workload}/${result.variant} are inconsistent.`);
+    }
+    if (
+      result.statistics.successfulSamples + result.statistics.failedSamples !== runs ||
+      result.statistics.plannedSamples !== runs
+    ) {
+      semanticError(`Local project statistics for ${result.workload}/${result.variant} are inconsistent.`);
+    }
+  }
+  if (expectedPairs.size !== 0) {
+    semanticError("Local project results do not cover every workload and variant.");
+  }
+}
+
+export function validateLocalProjectResultDocument(value) {
+  if (!validateLocalProjectResult(value)) {
+    const details = formatErrors(validateLocalProjectResult.errors);
+    throw new Error(`Local project result schema validation failed:\n${details}`);
+  }
+  validateLocalProjectResultSemantics(value);
+  return value;
 }
 
 function validHistoricalMedian(observation) {

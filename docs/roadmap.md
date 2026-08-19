@@ -320,6 +320,12 @@ Issue #12で、UbuntuのNode 20／22／24とmacOS／WindowsのNode 24を使うCI
 - OSSプロジェクトの特定commitで再現できる
 - 合成fixtureと実プロジェクトの傾向を比較できる
 
+Issue #13で、cleanなGit checkoutのoriginとcommitを検証してTS6、TS7
+single-threaded、TS7 defaultを読み取り専用で測定するlocal-project adapterを追加した。
+installはmanifestへ記録するだけで自動実行せず、typecheckは`--noEmit`、buildは
+`--dry`を必須とする。raw output、local path、source file、成果物は保存せず、固定commitの
+OSS manifestとsynthetic fixtureのspeedup傾向比較をversioned resultへ記録する。
+
 ### Phase 10 — 調査結果とポートフォリオの完成
 
 最終的に次の問いへ答える。

@@ -7,9 +7,12 @@
 ```text
 results/
 ├── runs/
-│   └── <run-id>/
-│       ├── benchmark.json
-│       ├── comparison.json
+│   ├── <lab-run-id>/
+│   │   ├── benchmark.json
+│   │   ├── comparison.json
+│   │   └── manifest.json
+│   └── <project-run-id>/
+│       ├── local-project.json
 │       └── manifest.json
 ├── latest.json
 ├── benchmark.json
@@ -23,13 +26,19 @@ reports/
         └── comparison.csv
 ```
 
-`manifest.json`は、同じ`runId`のbenchmarkとcomparisonを関連付ける。
+normal lab runの`manifest.json`は、同じ`runId`のbenchmarkとcomparisonを
+関連付ける。local-project runのmanifestは1つの`local-project.json`を管理する。
 `latest.json`は、最後に正常完了したrunのmanifestを指すJSON pointerである。
 symlinkを使わないため、Windowsを含む環境で同じ形式を利用できる。
 
 直下の`benchmark.json`と`comparison.json`は既存の利用方法を維持するための
 互換ミラーであり、最後にfinalizeされたrunだけを反映する。履歴の正本ではない。
 新しいreaderはrun directoryまたは`latest.json`を利用すること。
+
+local-project runは同じ`results/runs/<run-id>/`へ`local-project.json`と
+`local-project-run-manifest`を保存する。通常lab runのbenchmark／comparison pairとは
+独立してcompleteになり、互換ミラーと`latest.json`は更新しない。これにより外部project
+測定が通常lab runのlatest参照を置き換えない。
 
 ## Run lifecycle
 
@@ -74,6 +83,7 @@ npm run report -- --run-id <run-id>
 ```
 
 履歴一覧は次で確認する。partialや不正なdirectoryも既定で表示する。
+通常lab runとlocal-project runは`kind`列で区別する。
 
 ```bash
 npm run runs

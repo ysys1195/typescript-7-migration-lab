@@ -4,6 +4,7 @@
   "title": "TypeScript 7 Migration Lab run storage",
   "oneOf": [
     { "$ref": "#/$defs/runManifest" },
+    { "$ref": "#/$defs/localProjectRunManifest" },
     { "$ref": "#/$defs/latestPointer" }
   ],
   "$defs": {
@@ -86,6 +87,72 @@
           },
           "else": {
             "properties": { "completedAt": { "type": "null" } }
+          }
+        }
+      ]
+    },
+    "localProjectRunManifest": {
+      "type": "object",
+      "required": [
+        "storageVersion",
+        "kind",
+        "runId",
+        "status",
+        "createdAt",
+        "updatedAt",
+        "completedAt",
+        "project",
+        "artifact"
+      ],
+      "properties": {
+        "storageVersion": { "const": "1.0.0" },
+        "kind": { "const": "local-project-run-manifest" },
+        "runId": { "$ref": "#/$defs/runId" },
+        "status": { "enum": ["partial", "complete"] },
+        "createdAt": { "$ref": "#/$defs/timestamp" },
+        "updatedAt": { "$ref": "#/$defs/timestamp" },
+        "completedAt": {
+          "oneOf": [
+            { "$ref": "#/$defs/timestamp" },
+            { "type": "null" }
+          ]
+        },
+        "project": {
+          "type": "object",
+          "required": ["id", "source"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1 },
+            "source": {
+              "$ref": "https://github.com/ysys1195/typescript-7-migration-lab/schemas/local-project-manifest.schema.json#/$defs/source"
+            }
+          },
+          "additionalProperties": false
+        },
+        "artifact": {
+          "oneOf": [
+            { "const": "local-project.json" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": { "status": { "const": "complete" } },
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "completedAt": { "$ref": "#/$defs/timestamp" },
+              "artifact": { "const": "local-project.json" }
+            }
+          },
+          "else": {
+            "properties": {
+              "completedAt": { "type": "null" },
+              "artifact": { "type": "null" }
+            }
           }
         }
       ]
