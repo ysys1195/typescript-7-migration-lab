@@ -346,6 +346,11 @@ OSS manifestとsynthetic fixtureのspeedup傾向比較をversioned resultへ記�
 - スクリーンショットとグラフ
 - 制約と今後の課題
 
+Issue #14で、medium presetの標準runを根拠に性能、resource、互換性、移行判断を
+`docs/final-report.md`へ統合した。最新runから再生成できるグラフ、read-only dashboardの
+スクリーンショット、GitHub Issueへの追跡リンク、再現手順、制約、今後の課題を
+明示し、Notion向け原稿も最終結果に更新した。
+
 ## 5. 推奨する実装順
 
 1. Phase 1: schemaと履歴保存

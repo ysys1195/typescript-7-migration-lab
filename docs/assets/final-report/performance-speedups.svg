@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800" role="img" aria-labelledby="title description">
+  <title id="title">TS6 to TS7 median wall-clock speedup</title>
+  <desc id="description">Representative fixture speedups comparing TypeScript 6 with TypeScript 7 single-threaded and default configurations.</desc>
+  <style>
+    .background { fill: #0d1110; }
+    text { fill: #f4f2ea; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .eyebrow { fill: #9ce3be; font: 700 14px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 2px; }
+    .heading { font-size: 35px; font-weight: 620; letter-spacing: -1px; }
+    .subheading, .note, .tick, .value { fill: #9eaaa6; }
+    .subheading { font-size: 17px; }
+    .legend { font-size: 14px; }
+    .fixture { font-size: 16px; font-weight: 590; }
+    .value { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .value.strong { fill: #9ce3be; }
+    .tick { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .note { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .grid { stroke: #2b3531; stroke-width: 1; }
+    .native { fill: #7ec8ff; }
+    .overall { fill: #45c98b; }
+  </style>
+  <rect width="100%" height="100%" class="background"/>
+  <text x="48" y="38" class="eyebrow">STANDARD LAB RUN / MEDIAN WALL-CLOCK</text>
+  <text x="48" y="82" class="heading">Where TypeScript 7 changes the work</text>
+  <text x="48" y="112" class="subheading">Higher is faster. Native approximates TS6 / TS7 single; overall is TS6 / TS7 default.</text>
+  <rect x="48" y="139" width="16" height="16" class="native"/><text x="74" y="152" class="legend">native approximation</text>
+  <rect x="254" y="139" width="16" height="16" class="overall"/><text x="280" y="152" class="legend">overall observed speedup</text>
+  <line x1="315" y1="178" x2="315" y2="730" class="grid"/>
+<text x="315" y="762" class="tick" text-anchor="middle">0.0x</text>
+<line x1="527.5" y1="178" x2="527.5" y2="730" class="grid"/>
+<text x="527.5" y="762" class="tick" text-anchor="middle">1.0x</text>
+<line x1="740" y1="178" x2="740" y2="730" class="grid"/>
+<text x="740" y="762" class="tick" text-anchor="middle">2.0x</text>
+<line x1="952.5" y1="178" x2="952.5" y2="730" class="grid"/>
+<text x="952.5" y="762" class="tick" text-anchor="middle">3.0x</text>
+<line x1="1165" y1="178" x2="1165" y2="730" class="grid"/>
+<text x="1165" y="762" class="tick" text-anchor="middle">4.0x</text>
+  <text x="48" y="221" class="fixture">startup-only</text>
+      <rect x="315" y="199" width="230.23037771574738" height="16" class="native"/>
+      <rect x="315" y="221" width="236.68008509343125" height="16" class="overall"/>
+      <text x="555.2303777157474" y="212" class="value">1.08x</text>
+      <text x="561.6800850934312" y="234" class="value strong">1.11x</text>
+<text x="48" y="285" class="fixture">parse-heavy</text>
+      <rect x="315" y="263" width="566.2150904101319" height="16" class="native"/>
+      <rect x="315" y="285" width="717.1914804576577" height="16" class="overall"/>
+      <text x="891.2150904101319" y="276" class="value">2.66x</text>
+      <text x="1042.1914804576577" y="298" class="value strong">3.38x</text>
+<text x="48" y="349" class="fixture">many-files</text>
+      <rect x="315" y="327" width="590.1744656697268" height="16" class="native"/>
+      <rect x="315" y="349" width="648.7134803711957" height="16" class="overall"/>
+      <text x="915.1744656697268" y="340" class="value">2.78x</text>
+      <text x="973.7134803711957" y="362" class="value strong">3.05x</text>
+<text x="48" y="413" class="fixture">type-heavy-scaled</text>
+      <rect x="315" y="391" width="567.4324816336202" height="16" class="native"/>
+      <rect x="315" y="413" width="643.850316855525" height="16" class="overall"/>
+      <text x="892.4324816336202" y="404" class="value">2.67x</text>
+      <text x="968.850316855525" y="426" class="value strong">3.03x</text>
+<text x="48" y="477" class="fixture">emit-heavy</text>
+      <rect x="315" y="455" width="586.7317434238931" height="16" class="native"/>
+      <rect x="315" y="477" width="644.958647159937" height="16" class="overall"/>
+      <text x="911.7317434238931" y="468" class="value">2.76x</text>
+      <text x="969.958647159937" y="490" class="value strong">3.04x</text>
+<text x="48" y="541" class="fixture">module-resolution</text>
+      <rect x="315" y="519" width="616.6850098468963" height="16" class="native"/>
+      <rect x="315" y="541" width="630.3556066913619" height="16" class="overall"/>
+      <text x="941.6850098468963" y="532" class="value">2.90x</text>
+      <text x="955.3556066913619" y="554" class="value strong">2.97x</text>
+<text x="48" y="605" class="fixture">incremental-edit</text>
+      <rect x="315" y="583" width="759.138161753846" height="16" class="native"/>
+      <rect x="315" y="605" width="814.288146653404" height="16" class="overall"/>
+      <text x="1084.138161753846" y="596" class="value">3.57x</text>
+      <text x="1139.288146653404" y="618" class="value strong">3.83x</text>
+<text x="48" y="669" class="fixture">project-references-dag</text>
+      <rect x="315" y="647" width="458.85965367952764" height="16" class="native"/>
+      <rect x="315" y="669" width="751.7338303123981" height="16" class="overall"/>
+      <text x="783.8596536795276" y="660" class="value">2.16x</text>
+      <text x="1076.7338303123981" y="682" class="value strong">3.54x</text>
+  <text x="48" y="782" class="note">Run 6a0a85ee-fc81-49aa-952e-b3eee69fe573 | medium preset | 10 measured + 2 warm-up | Apple M1 | TS6 6.0.3 / TS7 7.0.2</text>
+</svg>

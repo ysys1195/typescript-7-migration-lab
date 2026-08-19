@@ -32,6 +32,7 @@
     "ecosystem:record": "node scripts/ecosystem-compatibility.mjs --record",
     "project:benchmark": "node scripts/local-project.mjs",
     "report": "node scripts/report.mjs",
+    "report:assets": "node scripts/report-assets.mjs",
     "dev": "node scripts/dashboard-server.mjs",
     "lab": "node scripts/lab.mjs",
     "lab:quick": "LAB_FIXTURE_PRESET=small LAB_RUNS=3 LAB_WARMUPS=1 node scripts/lab.mjs"

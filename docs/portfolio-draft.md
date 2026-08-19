@@ -1,189 +1,162 @@
-# TypeScript 7は何が速くなったのか — 自分のマシンで検証できるMigration Labを作る
+# TypeScript 7はどこが速いのか — 移行判断まで再現できるMigration Lab
 
-> Notion掲載用のドラフトです。測定を追加するたびに「結果」と「学び」を更新します。
+> Notion掲載用の最終原稿。詳細数値と制約は
+> [最終技術レポート](final-report.md)を正本とする。
 
-## 概要
+## 3行で説明
 
-TypeScript 7では、従来JavaScriptとして動いていたTypeScriptコンパイラと
-ツール群が、Goによるネイティブ実装へ移行しました。
+TypeScript 6とGoベースのTypeScript 7を、同じinputとcompiler optionsで比較する
+実験環境を設計・実装しました。速度、並列化、CPU/RSS、diagnostics、emit、compiler
+options、ecosystemを別々の問いとして測定しています。Apple M1の標準runでは、
+17 fixtureのTS6対TS7 default速度比の中央値は3.03倍でしたが、他環境へは一般化していません。
 
-公式には大幅な高速化が紹介されています。しかし、単に「Goになって速くなった」
-と理解するだけでは、次の疑問が残ります。
+## 背景と問題設定
 
-- 自分の開発環境ではどの程度速くなるのか
-- パース、型チェック、emitのどこが速くなったのか
-- ネイティブ化と並列化は、それぞれどの程度効いているのか
-- 高速化と引き換えに利用できなくなった機能はあるのか
-- 既存プロジェクトはそのまま移行できるのか
+TypeScript 7ではcompilerがJavaScript実装からGoによるnative実装へ移行しました。
+「大幅に速くなる」という説明だけでは、実projectの移行判断には情報が足りません。
 
-これらを推測ではなく実験結果から理解するため、TypeScript 6とTypeScript 7を
-同じ条件で比較する「TypeScript 7 Migration Lab」を作っています。
+- 起動、parse、type check、emit、incrementalのどこが速いのか
+- native実装とparallel workerの効果をどこまで分けられるか
+- wall-clockを短縮するとCPUやmemoryはどう変わるか
+- diagnosticsやemitは同じか、差は意図された変更か
+- compiler APIを使うtoolも同じタイミングで移行できるか
 
-## このプロジェクトで検証すること
+そこで、性能と互換性を別の実験とし、「どの条件で、どこまで言えるか」を
+結果と一緒に保存することにしました。
 
-大きく分けて、性能と互換性の2軸で検証します。
+## 実験設計
 
-### 性能
-
-- コンパイル全体の時間
-- parse、bind、check、emitの内訳
-- single-threadedとparallelの差
-- ファイル数や型計算量による変化
-- project references
-- incremental buildとwatch mode
-- メモリ使用量
-
-### 互換性
-
-- diagnosticsのcode、位置、メッセージ
-- 生成されるJavaScript
-- declaration file
-- compiler options
-- デフォルト設定
-- JSXとJSDoc
-- compiler API
-- 周辺ツールとフレームワーク
-
-## なぜTS7 single-threadedも測るのか
-
-TypeScript 7が高速化した理由は、Goへの移植だけではありません。ネイティブコード、
-データ構造の変更、共有メモリ、複数workerによる並列化などが組み合わさっています。
-
-そこで、このラボでは次の3条件を比較します。
+### 3条件で速度の内訳を見る
 
 1. TypeScript 6
 2. TypeScript 7 `--singleThreaded`
 3. TypeScript 7 default
 
-TS6とTS7 single-threadedの差からネイティブ実装全体による効果を、TS7
-single-threadedとdefaultの差から並列化による追加効果を概算します。
+TS6対TS7 single-threadedをnative実装全体の概算、TS7 single-threaded対defaultを
+parallel設定の追加効果としました。実装は言語以外も変わるため、厳密な因果分解ではありません。
 
-内部実装は完全に同一ではないため、厳密な因果分解ではありません。それでも、
-TS6とTS7の合計時間だけを比較するより、高速化の内訳を考察しやすくなります。
+### ベンチマークの信頼性をデータにする
 
-## 現在実装できていること
+- cold、warm-up、measuredを分離
+- fixtureごとにvariantの先頭を回す`rotating-v1`
+- median、p95、mean、母標準偏差、Tukey外れ値候補
+- timeout、compiler error、runner errorを失敗データとして保存
+- compiler、Node、machine、Git commit、fixture規模、実行順をversioned JSONに保存
 
-- TypeScript 6.0.3とTypeScript 7.0.2の共存
-- warm-upを含む反復ベンチマーク
-- medianとp95の計算
-- `--extendedDiagnostics`の収集
-- TS6、TS7 single-threaded、TS7 defaultの比較
-- diagnostics比較
-- JavaScriptと`.d.ts`のemit比較
-- MarkdownとJSONレポート
-- 400ファイルを生成するfixture
-- JSX、JSDoc、型計算、project referencesのfixture
+グラフやUIを先に作らず、schemaとrun履歴を先に固めました。その結果、CLI、Markdown report、
+read-only dashboardが同じ正本データを読む構成にできました。
 
-すべての実験は次のコマンドで再実行できます。
+## 主要な結果
 
-```bash
-npm install
-npm run lab
-```
+測定条件はApple M1、8 logical CPUs、Node 24.14.0、TS6 6.0.3、TS7 7.0.2、
+medium preset、cold 1回、warm-up 2回、計測10回です。
 
-短時間で確認する場合は次を使います。
-
-```bash
-npm run lab:quick
-```
-
-## 最初の測定結果
-
-初回はApple M1、8 logical CPUsの環境で、各ケースをwarm-up 1回、計測3回の
-quick runとして実行しました。
-
-| Fixture | TS6 | TS7 single | TS7 default | Speedup |
+| Fixture | TS6 | TS7 single | TS7 default | 全体速度比 |
 |---|---:|---:|---:|---:|
-| small | 658.6 ms | 236.7 ms | 228.3 ms | 2.88x |
-| type-heavy | 615.5 ms | 236.8 ms | 226.7 ms | 2.72x |
-| many-files | 724.3 ms | 267.2 ms | 247.5 ms | 2.93x |
-| JSX | 616.2 ms | 235.3 ms | 225.5 ms | 2.73x |
-| JSDoc | 613.0 ms | 247.3 ms | 237.0 ms | 2.59x |
-| monorepo | 1003.8 ms | 386.5 ms | 374.3 ms | 2.68x |
+| startup-only | 59.9 ms | 55.3 ms | 53.8 ms | 1.11x |
+| parse-heavy | 455.3 ms | 170.9 ms | 134.9 ms | 3.38x |
+| type-heavy-scaled | 876.0 ms | 328.0 ms | 289.1 ms | 3.03x |
+| emit-heavy | 814.0 ms | 294.8 ms | 268.2 ms | 3.04x |
+| incremental-edit | 445.2 ms | 124.6 ms | 116.2 ms | 3.83x |
+| project-references-dag | 4502.3 ms | 2085.0 ms | 1272.7 ms | 3.54x |
 
-この環境ではTS7が約2.6〜2.9倍高速でした。
+![TS6からTS7への代表fixture速度比](assets/final-report/performance-speedups.svg)
 
-ただし、現時点のfixtureは小さく、実行時間のうちプロセス起動時間が占める割合が
-大きいと考えられます。そのため、この数値を「TS7は常に約3倍速い」という結論には
-していません。今後、より大規模なfixtureと起動時間baselineを追加します。
+起動だけは1.11倍で、parse・type・emit・module resolutionは約3倍でした。
+つまり、このrunの高速化はprocess起動だけでは説明できません。
 
-## 互換性について分かったこと
+17 fixtureの速度比の中央値は、TS6対TS7 singleが2.76倍、TS7 single対defaultが
+1.07倍でした。ただしproject-reference DAGではparallelの追加効果が1.64倍あり、
+workloadによって並列化の寄与は変わります。
 
-現時点のfixtureでは、通常のTypeScript、複雑な型、JSX、JSDocについて、
-TS6とTS7のdiagnosticsは一致しました。
+builderを1から4 workersへ増やすと、953.6 msから631.5 msへ1.51倍短縮しましたが、
+peak RSSは138.8 MiBから219.7 MiBへ1.58倍増えました。「速い」と「省memory」は
+同じ判断ではありません。
 
-意図的に3つの型エラーを含めたfixtureでも、エラーコード、位置、メッセージは
-一致しました。一方、プロセス終了コードはTS6が`2`、TS7が`1`でした。
+## 互換性の結果
 
-また、emit fixtureで生成されたJavaScriptと`.d.ts`は一致しました。
+- 通常TypeScript、型負荷、JSX、JSDocのdiagnosticsは一致
+- 型エラーのdiagnosticsは一致したが、exit codeはTS6=`2`、TS7=`1`
+- legacy optionsの差は、非推奨から廃止への既知変更と一致
+- JavaScriptと`.d.ts`のemitは一致
+- compiler option 12件はすべて固定した期待と一致
+- possible regressionは0件
 
-古いcompiler optionsでは、TS6が「非推奨」と報告する設定を、TS7は
-「削除済み」として報告します。このような意図された差をregressionと混同しない
-分類方法も実装していきます。
+Ecosystemはpackage versionを固定して実行しました。Vite 6.4.3とVitest 4.1.10の
+最小経路はTS7-onlyで成功しました。一方、typescript-eslint 8.67.0はTS7-onlyを
+peer dependencyとruntime guardで拒否し、compiler API用のTS6とCLI用のTS7を併設すると成功しました。
 
-## 実装で意識したこと
+## 移行にどう使うか
 
-### 測定結果を鵜呑みにしない
+### TS7のpilotを始めやすいproject
 
-ベンチマークでは、warm-up、複数回実行、medianを使っています。今後は実行順序、
-標準偏差、外れ値、CPU time、peak memoryも扱います。
+- CLIによるtypecheck・buildが中心
+- ES2015以上のtargetとmodern module resolutionを使う
+- compiler API consumerがないか、TS6併設を許容できる
+- diagnostics・emitの固定goldenをCIで照合できる
 
-### 失敗もデータとして扱う
+### 準備が必要なproject
 
-コンパイルできなかったこと自体が互換性の情報です。成功した測定だけではなく、
-終了コードやdiagnosticsも保存します。
+- `target=ES5`、`module=AMD`、`moduleResolution=node10`、`baseUrl`など廃止optionがある
+- typescript-eslint等がstable compiler APIを使う
+- custom pluginやbuild toolがTypeScript内部APIに依存する
+- shared CI runnerの単発performance値だけで移行効果を判定している
 
-### 意図された変更と未知の差を分ける
+実project adapterは、固定commitのcleanなcheckoutをコピーせずに読み取り専用で測定します。
+installは手動で、adapterは`--noEmit`と`--build --dry`だけを実行します。合成fixtureの
+3倍という数値を自分のprojectに転用せず、自分の環境で測るための出口です。
 
-差があっただけで「TS7のバグ」とは判断しません。既知の削除、デフォルト変更、
-API未対応、未知の差に分類します。
+## 実装した成果物
 
-### UIの前にデータ形式を固める
+- TypeScript 6 / 7共存環境と18種類のperformance workload
+- cold/warm/measured、回転順、timeout、失敗保存を備えたbenchmark runner
+- wall-clock、CPU time、peak RSS、checker/builder scaling
+- versioned JSON Schema、run履歴、latest pointer、履歴比較
+- diagnosticsの構造化差分、emit比較、compiler option catalog
+- typescript-eslint、Vite、Vitestの固定ecosystem fixture
+- Ubuntu Node 20/22/24、macOS/Windows Node 24のGitHub Actions CI
+- schema済みresultだけを読むlocal read-only dashboard
+- origin・commit・cleanlinessを検証するlocal-project adapter
+- 再生成できるMarkdown reportとSVG graph
 
-グラフを先に作るのではなく、実験結果のschemaと履歴保存を先に設計します。
-これにより、fixtureが増えてもUIを作り直しにくい構成を目指します。
+![medium presetの最新runを表示するdashboard](assets/final-report/dashboard-overview.jpg)
 
-## 今後のロードマップ
+## デバッグと品質保証から得た学び
 
-次の順で進める予定です。
+Windows CIの失敗はcompilerの互換性ではなく、resource measurementのtest doubleがUnixの
+temporary path構造を前提にしていたことが原因でした。Actions logをjob、test、stack traceの順で
+切り分け、Windowsで同じunit testを再現させ、OS非依存のcapability定義へ変えることで
+解決しました。修正後は5環境すべてで成功しています。
 
-1. 結果JSONのversioned schema
-2. 実行履歴と環境情報の保存
-3. ベンチマーク統計の改善
-4. diagnosticsの構造化比較
-5. compiler option互換性カタログ
-6. 性能fixtureの拡充
-7. 過去runとの比較
-8. ローカルWebダッシュボード
-9. 周辺ツール・フレームワーク検証
-10. CIと実プロジェクト検証
+また、最終runではbenchmark実行中にレポートscriptを編集したため、後段のmetadata照合が
+clean/dirtyの不一致を検出して停止しました。これは実験の途中で条件が変わった結果を、
+同一runとして公開しないための意図したguardです。作業差分を一時退避して同じcommit・cleanな
+条件でcomparisonを再実行し、schema検証後にのみfinalizeしました。
 
-詳細な計画と受け入れ条件はGitHubリポジトリのロードマップにまとめています。
+## このプロジェクトで示したいこと
 
-## このプロジェクトを通して示したいこと
+- 技術トピックを、測定可能な仮説へ分解する
+- 性能と互換性、速度とmemory、既知差とregressionを混ぜない
+- 成功値だけでなく、失敗、exit code、raw evidenceを保存する
+- 数値と同じ重さで、machine、input、反復、制約を説明する
+- CLI、data model、UI、CI、実project検証を1つの実験契約でつなぐ
 
-このプロジェクトは、TypeScript 7の機能紹介だけを目的にしていません。
-
-- 新しい技術を自分で検証する
-- 仮説を測定可能な形に分解する
-- 再現可能な実験を設計する
-- 数字の制約を明示する
-- 互換性を実行結果で判断する
-- CLI、データ設計、UI、CIまで一貫して構築する
-
-という開発姿勢を、コードと結果の両方で示すことを目指しています。
+「TS7は3倍速い」ではなく、「この条件では3.03倍。ただし、この範囲を超えては
+まだ言えない」と説明できることを成果と考えています。
 
 ## Links
 
-- GitHub: `公開後にURLを追加`
-- Detailed roadmap: `GitHub上のdocs/roadmap.mdへのリンクを追加`
-- Latest report: `GitHub上のレポートまたはスクリーンショットへのリンクを追加`
+- [GitHub repository](https://github.com/ysys1195/typescript-7-migration-lab)
+- [最終技術レポート](https://github.com/ysys1195/typescript-7-migration-lab/blob/main/docs/final-report.md)
+- [実装ロードマップ](https://github.com/ysys1195/typescript-7-migration-lab/blob/main/docs/roadmap.md)
+- [GitHub Issues](https://github.com/ysys1195/typescript-7-migration-lab/issues?q=is%3Aissue)
 
-## 次回更新予定
+## 今後の課題
 
-- versioned result schema
-- run履歴
-- 起動時間baseline
-- diagnosticsの構造化
+- 複数のCPU・OS・固定machineで標準runを反復する
+- Vite以外も含む複数のOSS・実projectと合成fixtureの傾向を比較する
+- 同一machineでcompiler versionごとの長期履歴を取る
+- TS7 programmatic APIと周辺toolの対応を追跡する
 
-測定条件と結論が変わった場合は、過去の結果を消さず、更新理由とともに追記します。
+詳細な測定条件、resource数値、移行表、再現手順、GitHub Issueへの追跡性は
+[最終技術レポート](final-report.md)にまとめています。
