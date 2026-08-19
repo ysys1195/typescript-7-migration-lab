@@ -13,6 +13,7 @@ TypeScript 6（JavaScript実装）とTypeScript 7（Goによるネイティブ�
 - [read-only local dashboard](docs/dashboard.md)
 - [ecosystem compatibility](docs/ecosystem-compatibility.md)
 - [continuous integration](docs/ci.md)
+- [local project benchmark adapter](docs/local-projects.md)
 - [ベンチマーク手法](docs/benchmark-methodology.md)
 - [CPU・メモリ測定方式](docs/resource-measurement.md)
 - [checker・builder scaling実験](docs/scaling-experiments.md)
@@ -47,7 +48,8 @@ npm run lab
 
 - `results/runs/<run-id>/benchmark.json`: 生の測定値と`--extendedDiagnostics`
 - `results/runs/<run-id>/comparison.json`: diagnosticsとemitの比較
-- `results/runs/<run-id>/manifest.json`: 2つのartifactを関連付けるmanifest
+- `results/runs/<run-id>/local-project.json`: 固定commitの外部project測定
+- `results/runs/<run-id>/manifest.json`: run種別ごとのartifactを管理するmanifest
 - `results/latest.json`: 最後に正常完了したrunへの参照
 - `results/benchmark.json`、`results/comparison.json`: 互換ミラー
 - `reports/latest.md`: 読みやすいサマリー
@@ -66,8 +68,23 @@ npm run test:history
 npm run test:dashboard
 npm run test:ecosystem
 npm run test:ci
+npm run test:project
 npm run runs
 ```
+
+既存のcleanなGit checkoutは、source fileやlocal path、raw compiler outputを保存せずに
+測定できる。installは常に手動とし、adapterはmanifestのread-only typecheckと
+dry buildだけを実行する。
+
+```bash
+npm run project:benchmark -- \
+  --manifest local-projects/vite-6.4.3.json \
+  --project /path/to/vite \
+  --synthetic-run results/benchmark.json
+```
+
+manifest形式、固定Vite例、安全境界、synthetic fixtureとの傾向比較は
+[local project benchmark adapter](docs/local-projects.md)を参照すること。
 
 typescript-eslint、Vite、Vitestの固定バージョンに対するmigration fixtureは次で
 再実行できます。registry accessが必要です。

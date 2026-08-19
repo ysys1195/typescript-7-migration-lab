@@ -81,3 +81,9 @@ readerは、対応していないMAJOR versionを拒否する。schemaを変更�
 `schemas/run-comparison.schema.json`（version `1.0.0`）で検証する。比較artifactの
 performance classification、machine fingerprint、compatibility fingerprintは
 `docs/historical-comparisons.md`を参照する。
+
+外部project測定は、source、license、commit、read-only commandを
+`schemas/local-project-manifest.schema.json`で検証し、測定結果を独立した
+`schemas/local-project-result.schema.json`（version `1.0.0`）で検証する。project
+resultは通常lab runのbenchmark／comparison envelopeへ混在させず、raw outputとlocal
+pathを持たない。保存方式とprivacy boundaryは`docs/local-projects.md`を参照する。

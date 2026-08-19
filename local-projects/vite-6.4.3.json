@@ -1,0 +1,52 @@
+{
+  "$schema": "../schemas/local-project-manifest.schema.json",
+  "schemaVersion": "1.0.0",
+  "kind": "local-project-manifest",
+  "id": "vite-6-4-3",
+  "name": "Vite 6.4.3",
+  "source": {
+    "url": "https://github.com/vitejs/vite",
+    "license": "MIT",
+    "commit": "6c2c881f15495738ff03bc1d67cc052c07e0cac4"
+  },
+  "commands": {
+    "install": {
+      "executable": "corepack",
+      "args": [
+        "pnpm",
+        "install",
+        "--frozen-lockfile",
+        "--ignore-scripts"
+      ],
+      "execution": "manual-only"
+    },
+    "typecheck": {
+      "args": [
+        "--project",
+        "packages/vite/tsconfig.json",
+        "--noEmit",
+        "--extendedDiagnostics"
+      ]
+    },
+    "build": {
+      "args": [
+        "--build",
+        "packages/vite/tsconfig.json",
+        "--dry",
+        "--extendedDiagnostics"
+      ]
+    }
+  },
+  "syntheticComparisons": [
+    {
+      "workload": "typecheck",
+      "fixture": "type-heavy-scaled",
+      "rationale": "Compare a real package type-check with the generated type-computation workload."
+    },
+    {
+      "workload": "build",
+      "fixture": "project-references-dag",
+      "rationale": "Compare build-mode startup and graph traversal with the generated project-reference DAG."
+    }
+  ]
+}
