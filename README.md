@@ -5,6 +5,7 @@ TypeScript 6（JavaScript実装）とTypeScript 7（Goによるネイティブ�
 
 ## Project documents
 
+- [最終技術レポート](docs/final-report.md)
 - [実装ロードマップ](docs/roadmap.md)
 - [Notion向けポートフォリオ原稿](docs/portfolio-draft.md)
 - [測定結果のschema](docs/result-schema.md)
